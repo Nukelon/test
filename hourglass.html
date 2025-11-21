@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D 沙漏物理模拟</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 20% 20%, #2f2f45, #0c0c12 55%);
+      color: #f6f6ff;
+      font-family: "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+    }
+    #info {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(15, 15, 26, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      pointer-events: none;
+      max-width: 360px;
+      line-height: 1.6;
+    }
+    #info strong { color: #8ad8ff; }
+    #overlay {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+    }
+    #glow-ring {
+      width: 60vmin;
+      height: 60vmin;
+      border: 1px solid rgba(138, 216, 255, 0.16);
+      border-radius: 50%;
+      filter: drop-shadow(0 0 20px rgba(138, 216, 255, 0.35));
+      transform: rotateX(80deg);
+    }
+    footer {
+      position: fixed;
+      bottom: 12px;
+      right: 16px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <div id="info">
+    <div><strong>3D 沙漏</strong> · 真实重力 · 任意角度</div>
+    <div>拖动空白处旋转沙漏，滚轮缩放；按 <kbd>R</kbd> 切换自动旋转。</div>
+  </div>
+  <div id="overlay" aria-hidden="true"><div id="glow-ring"></div></div>
+  <footer>Three.js + Cannon-es · 粒子物理沙流</footer>
+  <script type="module">
+    import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
+    import { OrbitControls } from "https://unpkg.com/three@0.165.0/examples/jsm/controls/OrbitControls.js";
+    import * as CANNON from "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js";
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 1.1, 2.1);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enablePan = false;
+    controls.minDistance = 1.2;
+    controls.maxDistance = 3.5;
+
+    const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
+    world.broadphase = new CANNON.SAPBroadphase(world);
+    world.allowSleep = true;
+    world.defaultContactMaterial.friction = 0.25;
+
+    const hourglassGroup = new THREE.Group();
+    scene.add(hourglassGroup);
+
+    const glassMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x79aaff,
+      metalness: 0,
+      roughness: 0,
+      transmission: 0.92,
+      thickness: 0.18,
+      clearcoat: 0.4,
+      opacity: 0.85,
+      transparent: true,
+      ior: 1.45,
+    });
+
+    function createLatheGeometry() {
+      const points = [];
+      const neckRadius = 0.12;
+      const bodyRadius = 0.42;
+      const height = 1;
+      for (let i = 0; i <= 32; i++) {
+        const t = i / 32;
+        const y = height * (t - 0.5);
+        const k = Math.abs(y / (height * 0.5));
+        const radius = THREE.MathUtils.lerp(bodyRadius, neckRadius, Math.pow(k, 1.5));
+        const smooth = radius + 0.02 * Math.cos(k * Math.PI);
+        points.push(new THREE.Vector2(smooth, y));
+      }
+      return new THREE.LatheGeometry(points, 92);
+    }
+
+    const glassGeometry = createLatheGeometry();
+    const glass = new THREE.Mesh(glassGeometry, glassMaterial);
+    glass.castShadow = false;
+    glass.receiveShadow = false;
+    hourglassGroup.add(glass);
+
+    // Internal wooden frame
+    const frameMaterial = new THREE.MeshStandardMaterial({ color: 0xb58863, roughness: 0.4, metalness: 0.15 });
+    const ringGeo = new THREE.TorusGeometry(0.46, 0.025, 16, 64);
+    const ringTop = new THREE.Mesh(ringGeo, frameMaterial);
+    ringTop.position.y = 0.52;
+    ringTop.castShadow = ringTop.receiveShadow = true;
+    const ringBottom = ringTop.clone();
+    ringBottom.position.y = -0.52;
+    const pillarGeo = new THREE.CylinderGeometry(0.02, 0.02, 1.04, 12);
+    const pillars = new THREE.Group();
+    for (let i = 0; i < 4; i++) {
+      const pillar = new THREE.Mesh(pillarGeo, frameMaterial);
+      const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      pillar.position.set(Math.cos(angle) * 0.32, 0, Math.sin(angle) * 0.32);
+      pillar.castShadow = pillar.receiveShadow = true;
+      pillars.add(pillar);
+    }
+    const capGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.06, 28);
+    const capTop = new THREE.Mesh(capGeo, frameMaterial);
+    capTop.position.y = 0.58;
+    capTop.castShadow = capTop.receiveShadow = true;
+    const capBottom = capTop.clone();
+    capBottom.position.y = -0.58;
+    hourglassGroup.add(ringTop, ringBottom, pillars, capTop, capBottom);
+
+    // Lighting
+    const hemi = new THREE.HemisphereLight(0x9dd1ff, 0x0d1c2d, 0.5);
+    scene.add(hemi);
+    const keyLight = new THREE.SpotLight(0xffffff, 1.6, 0, Math.PI / 6, 0.35, 1);
+    keyLight.position.set(2, 3, 3);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(1024, 1024);
+    scene.add(keyLight);
+    const rimLight = new THREE.PointLight(0x5fb0ff, 1.2);
+    rimLight.position.set(-2.5, 1, -1.5);
+    scene.add(rimLight);
+
+    // Floor glow
+    const floorGeo = new THREE.RingGeometry(0.6, 0.9, 72);
+    const floorMat = new THREE.MeshBasicMaterial({ color: 0x4ac6ff, transparent: true, opacity: 0.12, side: THREE.DoubleSide });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.62;
+    scene.add(floor);
+
+    // Physics helpers
+    function threeToTrimesh(geometry) {
+      const g = geometry.index ? geometry.toNonIndexed() : geometry;
+      const pos = Array.from(g.attributes.position.array);
+      const indices = [...Array(pos.length / 3).keys()];
+      return new CANNON.Trimesh(pos, indices);
+    }
+
+    // Build collision shell
+    const innerScale = 0.94;
+    const innerGeometry = glassGeometry.clone();
+    innerGeometry.scale(innerScale, innerScale, innerScale);
+    const glassBody = new CANNON.Body({ mass: 0, shape: threeToTrimesh(innerGeometry), material: new CANNON.Material({ friction: 0.25, restitution: 0.05 }) });
+    world.addBody(glassBody);
+
+    // Sand particles
+    const particleCount = 240;
+    const particleRadius = 0.015;
+    const particleGeo = new THREE.SphereGeometry(particleRadius, 14, 10);
+    const particleMat = new THREE.MeshStandardMaterial({ color: 0xf4d9a0, roughness: 0.7, metalness: 0.08 });
+    const particleMeshes = [];
+    const sandMaterial = new CANNON.Material({ friction: 0.35, restitution: 0.05 });
+    const contact = new CANNON.ContactMaterial(sandMaterial, sandMaterial, { friction: 0.3, restitution: 0.02 });
+    const glassContact = new CANNON.ContactMaterial(sandMaterial, glassBody.material, { friction: 0.24, restitution: 0.01 });
+    world.addContactMaterial(contact);
+    world.addContactMaterial(glassContact);
+
+    const particles = [];
+    function spawnParticle() {
+      const angle = Math.random() * Math.PI * 2;
+      const r = 0.12 * Math.random();
+      const x = Math.cos(angle) * r;
+      const z = Math.sin(angle) * r;
+      const y = 0.35 + Math.random() * 0.08;
+      const body = new CANNON.Body({ mass: 0.08, shape: new CANNON.Sphere(particleRadius), material: sandMaterial, linearDamping: 0.08, angularDamping: 0.05 });
+      body.position.set(x, y, z);
+      world.addBody(body);
+      const mesh = new THREE.Mesh(particleGeo, particleMat);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      hourglassGroup.add(mesh);
+      particles.push(body);
+      particleMeshes.push(mesh);
+    }
+    for (let i = 0; i < particleCount; i++) spawnParticle();
+
+    // Orientation logic
+    let autoRotate = false;
+    window.addEventListener("keydown", (e) => {
+      if (e.key.toLowerCase() === "r") autoRotate = !autoRotate;
+    });
+
+    const baseQuat = new THREE.Quaternion();
+    let isDragging = false;
+    let lastPos = new THREE.Vector2();
+    renderer.domElement.addEventListener("pointerdown", (e) => {
+      isDragging = true;
+      lastPos.set(e.clientX, e.clientY);
+    });
+    window.addEventListener("pointerup", () => (isDragging = false));
+    window.addEventListener("pointermove", (e) => {
+      if (!isDragging) return;
+      const dx = (e.clientX - lastPos.x) / window.innerWidth;
+      const dy = (e.clientY - lastPos.y) / window.innerHeight;
+      lastPos.set(e.clientX, e.clientY);
+      const quatX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dx * Math.PI * 1.2);
+      const quatY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), dy * Math.PI * 1.2);
+      baseQuat.multiplyQuaternions(quatX, baseQuat);
+      baseQuat.multiplyQuaternions(quatY, baseQuat);
+    });
+
+    function updateGravityFromOrientation() {
+      const g = new THREE.Vector3(0, -9.82, 0).applyQuaternion(baseQuat);
+      world.gravity.set(g.x, g.y, g.z);
+    }
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 1 / 30);
+      if (autoRotate) {
+        const auto = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dt * 0.6);
+        baseQuat.multiplyQuaternions(auto, baseQuat);
+      }
+      hourglassGroup.quaternion.copy(baseQuat);
+      glassBody.quaternion.copy(new CANNON.Quaternion(baseQuat.x, baseQuat.y, baseQuat.z, baseQuat.w));
+      updateGravityFromOrientation();
+      world.fixedStep(1 / 60, dt, 3);
+      for (let i = 0; i < particles.length; i++) {
+        const body = particles[i];
+        const mesh = particleMeshes[i];
+        mesh.position.copy(body.position);
+        mesh.quaternion.copy(body.quaternion);
+      }
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
