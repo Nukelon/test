@@ -1,417 +1,386 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>精致3D物理沙漏 - Three.js</title>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #111; font-family: 'Segoe UI', sans-serif; }
-        #canvas-container { width: 100vw; height: 100vh; }
-        #ui {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(255, 255, 255, 0.8);
-            text-align: center;
-            pointer-events: none;
-            z-index: 10;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-        }
-        h1 { font-weight: 300; margin: 0; letter-spacing: 2px; font-size: 24px; }
-        p { font-size: 12px; opacity: 0.6; margin-top: 5px; }
-        #btn-flip {
-            pointer-events: auto;
-            margin-top: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-            backdrop-filter: blur(5px);
-        }
-        #btn-flip:hover { background: rgba(255, 255, 255, 0.25); transform: scale(1.05); }
-    </style>
+  <meta charset="UTF-8" />
+  <title>3D 物理沙漏示例</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(ellipse at top, #1e293b 0%, #020617 60%, #000000 100%);
+      color: #e5e7eb;
+    }
+
+    #app {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .ui-overlay {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      padding: 12px 16px;
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 10px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      pointer-events: none;
+    }
+
+    .ui-overlay h1 {
+      margin: 0 0 4px;
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #e5e7eb;
+    }
+
+    .ui-overlay p {
+      margin: 0;
+      font-size: 12px;
+      color: #9ca3af;
+      line-height: 1.6;
+    }
+  </style>
 </head>
 <body>
+<div id="app">
+  <div class="ui-overlay">
+    <h1>3D Hourglass</h1>
+    <p>
+      鼠标左键拖动：旋转视角<br/>
+      鼠标滚轮：缩放<br/>
+      鼠标右键拖动：平移
+    </p>
+  </div>
+</div>
 
-    <div id="ui">
-        <h1>OBSIDIAN HOURGLASS</h1>
-        <p>拖动旋转视角 • 点击翻转沙漏</p>
-        <button id="btn-flip">翻转沙漏</button>
-    </div>
-    <div id="canvas-container"></div>
+<!-- Three.js 核心库 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.150.1/three.min.js"></script>
+<!-- OrbitControls 轨道控制器（支持任意角度旋转） -->
+<script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
+<!-- Cannon.js 物理引擎 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+<script>
+  // ========= 基本场景搭建 =========
+  const container = document.getElementById('app');
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x020617, 0.25);
 
-        // --- Configuration ---
-        const PARTICLE_COUNT = 4000;
-        const SAND_COLOR = 0xe6c288; // Gold/Sand color
-        const GLASS_COLOR = 0xffffff;
-        const SAND_SIZE = 0.06;
-        const GRAVITY = 0.08;
-        
-        // --- Scene Setup ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x050505);
-        scene.fog = new THREE.FogExp2(0x050505, 0.02);
+  const camera = new THREE.PerspectiveCamera(
+    45,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    100
+  );
+  camera.position.set(2.5, 1.8, 3.2);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 2, 12);
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.physicallyCorrectLights = true;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  container.appendChild(renderer.domElement);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.toneMapping = THREE.ReinhardToneMapping;
-        renderer.toneMappingExposure = 1.5;
-        container.appendChild(renderer.domElement);
+  // 轨道控制器（任意角度旋转）
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 1.5;
+  controls.maxDistance = 7;
+  controls.target.set(0, 0.9, 0);
 
-        // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
-        scene.add(ambientLight);
+  // ========= 灯光 =========
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  scene.add(ambientLight);
 
-        const spotLight = new THREE.SpotLight(0xffffff, 100);
-        spotLight.position.set(10, 20, 10);
-        spotLight.angle = Math.PI / 6;
-        spotLight.penumbra = 1;
-        scene.add(spotLight);
+  const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  mainLight.position.set(4, 6, 3);
+  mainLight.castShadow = true;
+  mainLight.shadow.mapSize.width = 1024;
+  mainLight.shadow.mapSize.height = 1024;
+  scene.add(mainLight);
 
-        const rimLight = new THREE.PointLight(0x4455ff, 20);
-        rimLight.position.set(-10, 5, -10);
-        scene.add(rimLight);
-        
-        const warmLight = new THREE.PointLight(0xffaa00, 10);
-        warmLight.position.set(10, -5, 10);
-        scene.add(warmLight);
+  const backLight = new THREE.DirectionalLight(0x88b4ff, 0.4);
+  backLight.position.set(-3, 3, -4);
+  scene.add(backLight);
 
-        // --- Hourglass Geometry (Procedural) ---
-        function createHourglassMesh() {
-            const points = [];
-            for (let i = 0; i <= 40; i++) {
-                const t = i / 40;
-                const y = (t - 0.5) * 8; 
-                // Equation for hourglass shape: x = a * cosh(y) or similar, here approximated
-                let x = Math.sqrt(1 + Math.pow(y, 2) * 0.15);
-                
-                // Pinch the middle
-                if (Math.abs(y) < 0.5) x = 0.2 + Math.abs(y) * 0.5;
-                
-                // Cap the ends
-                if (Math.abs(y) > 3.5) x = 2.5;
+  // ========= 地台 / 环境 =========
+  const floorGeometry = new THREE.CylinderGeometry(1.2, 1.4, 0.2, 48);
+  const floorMaterial = new THREE.MeshStandardMaterial({
+    color: 0x0b1120,
+    roughness: 0.6,
+    metalness: 0.2
+  });
+  const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
+  floorMesh.receiveShadow = true;
+  floorMesh.position.y = -0.05;
+  scene.add(floorMesh);
 
-                points.push(new THREE.Vector2(x, y));
-            }
+  // ========= 物理世界 =========
+  const world = new CANNON.World();
+  world.gravity.set(0, -9.82, 0);
+  world.broadphase = new CANNON.NaiveBroadphase();
+  world.solver.iterations = 10;
 
-            const geometry = new THREE.LatheGeometry(points, 64);
-            
-            const material = new THREE.MeshPhysicalMaterial({
-                color: GLASS_COLOR,
-                metalness: 0.1,
-                roughness: 0.05,
-                transmission: 0.95, // Glass transparency
-                thickness: 0.5,     // Refraction
-                clearcoat: 1.0,
-                clearcoatRoughness: 0.05,
-                side: THREE.DoubleSide
-            });
+  const sandMaterialPhys = new CANNON.Material('sand');
+  const wallMaterialPhys = new CANNON.Material('wall');
 
-            const glass = new THREE.Mesh(geometry, material);
-            glass.castShadow = true;
-            glass.receiveShadow = true;
-            return glass;
-        }
+  const sandWallContact = new CANNON.ContactMaterial(
+    sandMaterialPhys,
+    wallMaterialPhys,
+    {
+      friction: 0.3,
+      restitution: 0.1
+    }
+  );
+  world.addContactMaterial(sandWallContact);
 
-        const hourglass = new THREE.Group();
-        const glassMesh = createHourglassMesh();
-        hourglass.add(glassMesh);
+  // 物理地面（与 Three 里的地台对齐）
+  const groundShape = new CANNON.Box(new CANNON.Vec3(0.7, 0.05, 0.7));
+  const groundBody = new CANNON.Body({
+    mass: 0,
+    shape: groundShape,
+    material: wallMaterialPhys
+  });
+  groundBody.position.set(0, 0.05, 0);
+  world.addBody(groundBody);
 
-        // Add Wooden/Metal Caps
-        const capGeo = new THREE.CylinderGeometry(2.8, 2.8, 0.3, 32);
-        const capMat = new THREE.MeshStandardMaterial({ 
-            color: 0x2c1e12, 
-            roughness: 0.4, 
-            metalness: 0.6 
-        });
-        
-        const topCap = new THREE.Mesh(capGeo, capMat);
-        topCap.position.y = 4.1;
-        const bottomCap = new THREE.Mesh(capGeo, capMat);
-        bottomCap.position.y = -4.1;
-        
-        // Add Pillars
-        const pillarGeo = new THREE.CylinderGeometry(0.1, 0.1, 8.2, 16);
-        const pillarMat = new THREE.MeshStandardMaterial({ color: 0xb8860b, metalness: 1.0, roughness: 0.3 });
-        
-        for(let i=0; i<3; i++) {
-            const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-            const angle = (i / 3) * Math.PI * 2;
-            pillar.position.set(Math.cos(angle) * 2.4, 0, Math.sin(angle) * 2.4);
-            hourglass.add(pillar);
-        }
+  // 四周围墙，让沙粒不会飞出玻璃太远（简单的长方体围墙）
+  const wallHeight = 2.2;
+  const wallThickness = 0.05;
+  const wallHalfSize = 0.6;
 
-        hourglass.add(topCap);
-        hourglass.add(bottomCap);
-        scene.add(hourglass);
+  function createWallBox(halfX, halfY, halfZ, x, y, z) {
+    const shape = new CANNON.Box(new CANNON.Vec3(halfX, halfY, halfZ));
+    const body = new CANNON.Body({
+      mass: 0,
+      shape: shape,
+      material: wallMaterialPhys
+    });
+    body.position.set(x, y, z);
+    world.addBody(body);
+  }
 
-        // --- Particle System (Sand) ---
-        // We use InstancedMesh for high performance
-        const particleGeo = new THREE.DodecahedronGeometry(SAND_SIZE, 0);
-        const particleMat = new THREE.MeshStandardMaterial({
-            color: SAND_COLOR,
-            roughness: 0.5,
-            emissive: 0x553300, // Slight glow
-            emissiveIntensity: 0.2
-        });
+  // 前后墙
+  createWallBox(wallHalfSize, wallHeight * 0.5, wallThickness, 0, wallHeight * 0.5, -wallHalfSize);
+  createWallBox(wallHalfSize, wallHeight * 0.5, wallThickness, 0, wallHeight * 0.5, wallHalfSize);
+  // 左右墙
+  createWallBox(wallThickness, wallHeight * 0.5, wallHalfSize, -wallHalfSize, wallHeight * 0.5, 0);
+  createWallBox(wallThickness, wallHeight * 0.5, wallHalfSize, wallHalfSize, wallHeight * 0.5, 0);
 
-        const sandMesh = new THREE.InstancedMesh(particleGeo, particleMat, PARTICLE_COUNT);
-        hourglass.add(sandMesh);
+  // ========= 精致沙漏模型（仅视觉） =========
+  // 使用 LatheGeometry 做玻璃的双锥形轮廓
+  function createGlassHourglass() {
+    const points = [];
+    const totalHeight = 1.8;
+    const halfHeight = totalHeight / 2;
+    const neckRadius = 0.08;
+    const bulbRadius = 0.45;
+    const baseRadius = 0.22;
 
-        // Particle Data Structure
-        // x, y, z: current position
-        // vx, vy, vz: velocity
-        // state: 0 = top bulb, 1 = falling, 2 = bottom pile
-        // targetY: where it will land
-        const particles = [];
-        const dummy = new THREE.Object3D();
+    // 从底部到顶部的截面轮廓（左侧半径-高度曲线）
+    points.push(new THREE.Vector2(baseRadius, -halfHeight));    // 底部边缘
+    points.push(new THREE.Vector2(bulbRadius, -halfHeight + 0.3));
+    points.push(new THREE.Vector2(neckRadius * 1.1, -0.12));    // 下方收缩
+    points.push(new THREE.Vector2(neckRadius, 0));              // 中间窄口
+    points.push(new THREE.Vector2(neckRadius * 1.1, 0.12));     // 上方扩散
+    points.push(new THREE.Vector2(bulbRadius, halfHeight - 0.3));
+    points.push(new THREE.Vector2(baseRadius, halfHeight));     // 顶部边缘
 
-        // Initialize particles in top bulb
-        function initSand(isFlipped = false) {
-            particles.length = 0; // Clear array
-            const startY = isFlipped ? -2 : 2;
-            
-            for (let i = 0; i < PARTICLE_COUNT; i++) {
-                // Random position in upper bulb
-                const angle = Math.random() * Math.PI * 2;
-                const r = Math.random() * 2;
-                const h = Math.random() * 2;
-                
-                // Cone-ish distribution for the pile inside
-                let x = Math.cos(angle) * r;
-                let z = Math.sin(angle) * r;
-                let y = startY + h; 
-                
-                // Ensure they fit inside glass (simple bounding)
-                if (Math.sqrt(x*x + z*z) > 1.8) {
-                    x *= 0.5; z *= 0.5;
-                }
+    const glassGeom = new THREE.LatheGeometry(points, 64);
+    const glassMat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      roughness: 0.08,
+      metalness: 0.0,
+      transmission: 0.97,   // 透光
+      opacity: 1.0,
+      transparent: true,
+      thickness: 0.6,
+      envMapIntensity: 1.2,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.15
+    });
 
-                particles.push({
-                    x: x, y: y, z: z,
-                    vx: (Math.random() - 0.5) * 0.01,
-                    vy: 0,
-                    vz: (Math.random() - 0.5) * 0.01,
-                    active: true,
-                    delay: Math.random() * 100 // Random start delay for flow
-                });
-            }
-        }
+    const glassMesh = new THREE.Mesh(glassGeom, glassMat);
+    glassMesh.position.y = 0.95;
+    glassMesh.castShadow = true;
+    scene.add(glassMesh);
 
-        initSand();
+    // 上下金属圈
+    const ringGeom = new THREE.TorusGeometry(bulbRadius * 1.02, 0.02, 16, 64);
+    const ringMat = new THREE.MeshStandardMaterial({
+      color: 0xfacc15,
+      metalness: 0.9,
+      roughness: 0.25
+    });
 
-        // --- Physics Simulation ---
-        let isFlipped = false;
-        let rotationProgress = 0;
-        let targetRotationZ = 0;
+    const topRing = new THREE.Mesh(ringGeom, ringMat);
+    topRing.rotation.x = Math.PI / 2;
+    topRing.position.y = glassMesh.position.y + halfHeight;
+    scene.add(topRing);
 
-        function updateSand() {
-            const throatSize = 0.15;
-            const bottomFloor = -3.8;
-            
-            // Logic for normal orientation (Top -> Bottom)
-            // If flipped, we just conceptually invert Y logic or rotate the mesh. 
-            // Here, we will rotate the entire Hourglass Group, but we need to keep physics local coordinates relative.
-            
-            let fallSpeed = 0.15;
-            
-            // Simple "Pile Height" simulation for the bottom
-            // We approximate the pile height based on how many particles have landed
-            let landedCount = 0;
-            
-            particles.forEach((p, i) => {
-                if (p.delay > 0) {
-                    p.delay -= 1;
-                    // Jitter while waiting
-                    updateParticleMatrix(i, p.x, p.y, p.z);
-                    return;
-                }
+    const bottomRing = topRing.clone();
+    bottomRing.position.y = glassMesh.position.y - halfHeight;
+    scene.add(bottomRing);
 
-                // Distance to center axis
-                const r = Math.sqrt(p.x*p.x + p.z*p.z);
+    // 四根立柱
+    const pillarGeom = new THREE.CylinderGeometry(0.03, 0.03, totalHeight + 0.4, 24);
+    const pillarMat = new THREE.MeshStandardMaterial({
+      color: 0x9ca3af,
+      metalness: 0.7,
+      roughness: 0.3
+    });
 
-                // 1. Logic for Top Bulb (Moving towards hole)
-                if (p.y > 0.2) {
-                    // Move towards center
-                    const speed = 0.02 + Math.random() * 0.02;
-                    const angle = Math.atan2(p.z, p.x);
-                    
-                    // If far from center, move in
-                    if (r > throatSize) {
-                        p.x -= Math.cos(angle) * speed;
-                        p.z -= Math.sin(angle) * speed;
-                        // Gravity slide
-                        p.y -= 0.01; 
-                    } else {
-                        // Fall through hole
-                        p.y -= fallSpeed;
-                    }
-                } 
-                // 2. Falling State (In the air)
-                else if (p.y <= 0.2 && p.y > bottomFloor + 1.5) {
-                    p.y -= fallSpeed;
-                    // Slight spread
-                    p.x += (Math.random() - 0.5) * 0.01;
-                    p.z += (Math.random() - 0.5) * 0.01;
-                }
-                // 3. Bottom Pile logic
-                else {
-                    // Calculate a fake pile height based on distance from center (Gaussian bell curve)
-                    // As time goes on, the pile gets higher. 
-                    // Simple approximation: Stop when hitting the "cone" floor.
-                    
-                    // Define the shape of the pile at the bottom
-                    // This is a static calculation for visual effect, dynamic piling is very hard in JS
-                    // We randomize the stop height slightly
-                    
-                    const maxPileHeight = -0.5 - (r * 1.5); // Cone shape
-                    
-                    if (p.y > bottomFloor && p.y <= maxPileHeight) {
-                        // Keep falling
-                        p.y -= fallSpeed;
-                    } else {
-                        // Landed
-                        if (p.y < bottomFloor) p.y = bottomFloor;
-                        // If it hits the "pile slope", stop
-                        // Simple friction/stop
-                        p.vx = 0;
-                        p.vz = 0;
-                    }
-                }
+    const pillarRadius = bulbRadius * 1.1;
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2;
+      const pillar = new THREE.Mesh(pillarGeom, pillarMat);
+      pillar.position.set(
+        Math.cos(angle) * pillarRadius,
+        glassMesh.position.y,
+        Math.sin(angle) * pillarRadius
+      );
+      pillar.castShadow = true;
+      scene.add(pillar);
+    }
 
-                updateParticleMatrix(i, p.x, p.y, p.z);
-            });
-            
-            sandMesh.instanceMatrix.needsUpdate = true;
-        }
+    // 顶盖与底座的小圆盘
+    const capGeom = new THREE.CylinderGeometry(0.6, 0.6, 0.06, 48);
+    const capMat = new THREE.MeshStandardMaterial({
+      color: 0x111827,
+      metalness: 0.4,
+      roughness: 0.5
+    });
 
-        function updateParticleMatrix(index, x, y, z) {
-            dummy.position.set(x, y, z);
-            // Random rotation for glint
-            dummy.rotation.set(x, y, z); 
-            dummy.updateMatrix();
-            sandMesh.setMatrixAt(index, dummy.matrix);
-        }
+    const topCap = new THREE.Mesh(capGeom, capMat);
+    topCap.position.y = topRing.position.y + 0.06;
+    topCap.receiveShadow = true;
+    topCap.castShadow = true;
+    scene.add(topCap);
 
-        // --- Post Processing (Bloom) ---
-        const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.2;
-        bloomPass.strength = 0.4; // Soft glow
-        bloomPass.radius = 0.5;
+    const bottomCap = new THREE.Mesh(capGeom, capMat);
+    bottomCap.position.y = bottomRing.position.y - 0.06;
+    bottomCap.receiveShadow = true;
+    bottomCap.castShadow = true;
+    scene.add(bottomCap);
+  }
 
-        const composer = new EffectComposer(renderer);
-        composer.addPass(renderScene);
-        composer.addPass(bloomPass);
+  createGlassHourglass();
 
-        // --- Interaction: Rotate Object Logic ---
-        const flipBtn = document.getElementById('btn-flip');
-        
-        // This logic resets the particles to the top when flipped visually
-        flipBtn.addEventListener('click', () => {
-            isFlipped = !isFlipped;
-            targetRotationZ = isFlipped ? Math.PI : 0;
-            
-            // Reset particles to top logic essentially requires "teleporting" them 
-            // relative to the container or reversing physics. 
-            // For this demo, we will visually rotate the hourglass, 
-            // and when the rotation is halfway, we instantly reset physics to "start again".
-        });
+  // ========= 沙粒（Three + Cannon 绑定） =========
+  const sandCount = 260;
+  const sandRadius = 0.03;
+  const sandBodies = [];
 
-        // --- Animation Loop ---
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.autoRotate = true; // Slowly rotate camera for cinematic effect
-        controls.autoRotateSpeed = 0.5;
+  const sandGeometry = new THREE.SphereGeometry(sandRadius, 14, 14);
+  const sandMaterial = new THREE.MeshStandardMaterial({
+    color: 0xfbbf24,
+    roughness: 0.5,
+    metalness: 0.1
+  });
 
-        const clock = new THREE.Clock();
+  const sandMesh = new THREE.InstancedMesh(sandGeometry, sandMaterial, sandCount);
+  sandMesh.castShadow = true;
+  sandMesh.receiveShadow = true;
+  scene.add(sandMesh);
 
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            const delta = clock.getDelta();
+  const tempMatrix = new THREE.Matrix4();
+  const tempPosition = new THREE.Vector3();
 
-            // Handle Hourglass Flip Animation
-            if (Math.abs(hourglass.rotation.z - targetRotationZ) > 0.01) {
-                const step = (targetRotationZ - hourglass.rotation.z) * 5 * delta;
-                hourglass.rotation.z += step;
-                
-                // Reset physics trigger when half flipped
-                // We detect if we just crossed the 90 degree mark or similar
-                if (Math.abs(Math.abs(hourglass.rotation.z) - Math.PI/2) < 0.1) {
-                   // This is a visual trick: We don't actually compute upside-down physics.
-                   // We reset the particles to the "top" (local coordinates) and let them fall again.
-                   // But since the mesh is upside down, we need to make sure the logic flows correct visually.
-                   // For simplicity in this specific demo: 
-                   // We only simulate sand flowing "Local Y Down".
-                }
-            }
-            
-            // Constant reset logic for the "Infinity" effect or Manual Reset
-            // If particles are all at bottom, and we flipped, we reset them to top
-            // Actually, let's just run the physics locally.
-            // If the hourglass is rotated 180 (PI), Local Y down is World Y Up.
-            // To make this look right without complex RigidBody physics:
-            // We just reset the simulation whenever the user clicks flip.
-            
-            if (Math.abs(hourglass.rotation.z - targetRotationZ) < 0.1 && Math.abs(hourglass.rotation.z - (isFlipped ? Math.PI : 0)) < 0.1) {
-                 // If rotation finished, we allow physics to run normally?
-                 // Actually, the simplest robust way for a web demo is:
-                 // The physics always runs "Local Top to Bottom".
-                 // When we flip, we fade out or quickly move particles to the new Top.
-            }
+  function initSand() {
+    for (let i = 0; i < sandCount; i++) {
+      const body = new CANNON.Body({
+        mass: 0.02,
+        shape: new CANNON.Sphere(sandRadius),
+        material: sandMaterialPhys
+      });
 
-            // Run Physics
-            updateSand();
+      // 将沙粒初始随机放在上半部分的“沙堆”位置
+      const angle = Math.random() * Math.PI * 2;
+      const r = 0.15 * Math.sqrt(Math.random());
+      const x = Math.cos(angle) * r;
+      const z = Math.sin(angle) * r;
+      const y = 1.4 + Math.random() * 0.3; // 上半球区域
 
-            controls.update();
-            
-            // Render
-            composer.render();
-        }
-        
-        // Handle "Flip" logic specifically:
-        // When clicked, we rotate the mesh. When mesh is upside down, we simply restart the particles at the "new top".
-        let previousFlipState = false;
-        flipBtn.addEventListener('click', () => {
-             // Delay the particle reset until the visual rotation covers it up slightly
-             setTimeout(() => {
-                 initSand();
-             }, 300); // Wait 300ms into the rotation
-        });
+      body.position.set(x, y, z);
+      body.linearDamping = 0.01;
+      body.angularDamping = 0.01;
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
-        });
+      sandBodies.push(body);
+      world.addBody(body);
 
-        animate();
-    </script>
+      tempMatrix.identity().setPosition(x, y, z);
+      sandMesh.setMatrixAt(i, tempMatrix);
+    }
+    sandMesh.instanceMatrix.needsUpdate = true;
+  }
+
+  initSand();
+
+  // ========= 动画循环 =========
+  const clock = new THREE.Clock();
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    const delta = clock.getDelta();
+    const fixedTimeStep = 1 / 60;
+    const maxSubSteps = 3;
+
+    world.step(fixedTimeStep, delta, maxSubSteps);
+
+    // 同步物理沙粒的位置信息到 Three.js
+    for (let i = 0; i < sandCount; i++) {
+      const body = sandBodies[i];
+      const p = body.position;
+
+      // 简单的越界重生逻辑：如果沙粒掉得太远，就重新放回顶部
+      if (p.y < -1 || Math.abs(p.x) > 1.5 || Math.abs(p.z) > 1.5) {
+        const angle = Math.random() * Math.PI * 2;
+        const r = 0.15 * Math.sqrt(Math.random());
+        const x = Math.cos(angle) * r;
+        const z = Math.sin(angle) * r;
+        const y = 1.4 + Math.random() * 0.3;
+
+        body.position.set(x, y, z);
+        body.velocity.set(0, 0, 0);
+        body.angularVelocity.set(0, 0, 0);
+      }
+
+      tempPosition.set(p.x, p.y, p.z);
+      tempMatrix.identity().setPosition(tempPosition);
+      sandMesh.setMatrixAt(i, tempMatrix);
+    }
+    sandMesh.instanceMatrix.needsUpdate = true;
+
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  animate();
+
+  // ========= 自适应窗口大小 =========
+  function onWindowResize() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  }
+
+  window.addEventListener('resize', onWindowResize);
+</script>
 </body>
 </html>
