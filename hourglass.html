@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>沙漏模拟器</title>
+  <style>
+    :root {
+      --duration: 60s;
+      --sand: #f5c873;
+      --glass: rgba(255, 255, 255, 0.8);
+      --accent: #1f2937;
+      --bg: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 20% 20%, #1e293b, #0f172a 50%),
+                  radial-gradient(circle at 80% 80%, #0b1221, #0f172a 60%);
+      color: #e2e8f0;
+      padding: 32px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      max-width: 960px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      padding: 28px;
+      backdrop-filter: blur(14px);
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    p {
+      margin: 0 0 16px;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    label {
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(15, 23, 42, 0.6);
+      color: #e2e8f0;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input[type="number"]:focus {
+      border-color: #fbbf24;
+      box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.25);
+    }
+
+    button {
+      border: none;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: #0f172a;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(251, 191, 36, 0.35);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(251, 191, 36, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 6px 14px rgba(251, 191, 36, 0.25);
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+    }
+
+    .status strong {
+      color: #fbbf24;
+    }
+
+    .hourglass-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 20px;
+    }
+
+    .hourglass {
+      position: relative;
+      width: 240px;
+      height: 380px;
+      perspective: 800px;
+    }
+
+    .glass {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      clip-path: polygon(40% 0, 60% 0, 100% 40%, 60% 100%, 40% 100%, 0 40%);
+      backdrop-filter: blur(4px);
+      box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.06);
+    }
+
+    .sand {
+      position: absolute;
+      inset: 18px;
+      clip-path: polygon(42% 0, 58% 0, 96% 42%, 58% 96%, 42% 96%, 4% 42%);
+      overflow: hidden;
+    }
+
+    .sand-top,
+    .sand-bottom {
+      position: absolute;
+      left: 0;
+      right: 0;
+      background: linear-gradient(180deg, #fcd34d, #f59e0b);
+      filter: drop-shadow(0 8px 16px rgba(251, 191, 36, 0.35));
+    }
+
+    .sand-top {
+      top: 0;
+      height: 100%;
+      border-radius: 18px 18px 50% 50%;
+      transform-origin: 50% 100%;
+      animation: top-sand var(--duration) linear forwards;
+    }
+
+    .sand-bottom {
+      bottom: 0;
+      height: 0;
+      border-radius: 50% 50% 18px 18px;
+      transform-origin: 50% 0;
+      animation: bottom-sand var(--duration) linear forwards;
+    }
+
+    .stream {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 6px;
+      height: 0;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(180deg, #fde68a, #f59e0b);
+      border-radius: 10px;
+      animation: stream var(--duration) linear forwards;
+      box-shadow: 0 0 14px rgba(251, 191, 36, 0.45);
+    }
+
+    .frame {
+      position: absolute;
+      inset: 0;
+      border-radius: 28px;
+      border: 6px solid rgba(0, 0, 0, 0.35);
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.35);
+      pointer-events: none;
+    }
+
+    @keyframes top-sand {
+      from { transform: scaleY(1); }
+      to { transform: scaleY(0); }
+    }
+
+    @keyframes bottom-sand {
+      from { transform: scaleY(0); height: 0; }
+      to { transform: scaleY(1); height: 100%; }
+    }
+
+    @keyframes stream {
+      0% { height: 0; opacity: 0; }
+      5% { height: 180px; opacity: 1; }
+      95% { height: 180px; opacity: 1; }
+      100% { height: 0; opacity: 0; }
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .pill {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    .pill strong {
+      display: block;
+      color: #facc15;
+      margin-bottom: 4px;
+    }
+
+    .countdown {
+      font-size: 42px;
+      font-weight: 800;
+      margin: 0;
+      color: #facc15;
+      letter-spacing: 0.04em;
+      text-shadow: 0 8px 30px rgba(251, 191, 36, 0.35);
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 16px; }
+      .card { padding: 20px; }
+      .hourglass { height: 320px; width: 200px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="controls">
+      <div>
+        <h1>沙漏模拟器</h1>
+        <p>设置自定义时间，启动后沙漏动画与倒计时同步运行。再次点击“开始”即可重置并重新计时。</p>
+      </div>
+      <label for="seconds">时间（秒，5 - 3600）：</label>
+      <input id="seconds" type="number" min="5" max="3600" value="60" />
+      <button id="start">开始</button>
+      <div class="status" id="status">准备就绪，点击开始启动。</div>
+      <p class="countdown" id="countdown">60.0 s</p>
+      <div class="info-grid">
+        <div class="pill"><strong>动画时长</strong><span id="duration">60 秒</span></div>
+        <div class="pill"><strong>进度</strong><span id="progress">0%</span></div>
+        <div class="pill"><strong>预计结束</strong><span id="eta">--:--:--</span></div>
+      </div>
+    </div>
+    <div class="hourglass-wrap">
+      <div class="hourglass" id="hourglass">
+        <div class="glass"></div>
+        <div class="sand">
+          <div class="sand-top"></div>
+          <div class="sand-bottom"></div>
+          <div class="stream"></div>
+        </div>
+        <div class="frame"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const secondsInput = document.getElementById('seconds');
+    const startBtn = document.getElementById('start');
+    const countdownEl = document.getElementById('countdown');
+    const statusEl = document.getElementById('status');
+    const durationEl = document.getElementById('duration');
+    const progressEl = document.getElementById('progress');
+    const etaEl = document.getElementById('eta');
+    let hourglass = document.getElementById('hourglass');
+
+    let timerId = null;
+    let endTime = null;
+    let startTime = null;
+
+    const formatter = new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+    function clampSeconds(value) {
+      const n = Number(value);
+      if (Number.isNaN(n)) return 60;
+      return Math.min(Math.max(n, 5), 3600);
+    }
+
+    function formatTimeRemaining(ms) {
+      if (ms < 0) ms = 0;
+      const totalSeconds = ms / 1000;
+      if (totalSeconds >= 60) {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}分${formatter.format(seconds)}秒`;
+      }
+      return `${formatter.format(totalSeconds)} s`;
+    }
+
+    function formatEta(endTimestamp) {
+      if (!endTimestamp) return '--:--:--';
+      const date = new Date(endTimestamp);
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    }
+
+    function restartAnimation(durationSec) {
+      document.documentElement.style.setProperty('--duration', `${durationSec}s`);
+      const clone = hourglass.cloneNode(true);
+      hourglass.replaceWith(clone);
+      hourglass = clone;
+    }
+
+    function startTimer() {
+      const seconds = clampSeconds(secondsInput.value);
+      secondsInput.value = seconds;
+      startTime = Date.now();
+      endTime = startTime + seconds * 1000;
+
+      durationEl.textContent = `${seconds} 秒`;
+      etaEl.textContent = formatEta(endTime);
+      statusEl.textContent = '计时中，沙漏正在流动...';
+
+      restartAnimation(seconds);
+      updateCountdown();
+
+      if (timerId) clearInterval(timerId);
+      timerId = setInterval(updateCountdown, 100);
+    }
+
+    function updateCountdown() {
+      const now = Date.now();
+      const remaining = endTime - now;
+      const clamped = Math.max(remaining, 0);
+
+      countdownEl.textContent = formatTimeRemaining(clamped);
+
+      const fullDuration = endTime - startTime;
+      const elapsed = Math.max(0, fullDuration - clamped);
+      const progress = fullDuration > 0 ? Math.min(100, (elapsed / fullDuration) * 100) : 0;
+      progressEl.textContent = `${Math.max(0, progress).toFixed(1)}%`;
+
+      if (remaining <= 0) {
+        statusEl.textContent = '时间到！点击开始重新计时。';
+        etaEl.textContent = formatEta(null);
+        clearInterval(timerId);
+        timerId = null;
+      }
+    }
+
+    startBtn.addEventListener('click', startTimer);
+    secondsInput.addEventListener('input', () => {
+      const v = clampSeconds(secondsInput.value);
+      secondsInput.value = v;
+      durationEl.textContent = `${v} 秒`;
+    });
+
+    // 初始化状态
+    durationEl.textContent = `${secondsInput.value} 秒`;
+    progressEl.textContent = '0%';
+  </script>
+</body>
+</html>
