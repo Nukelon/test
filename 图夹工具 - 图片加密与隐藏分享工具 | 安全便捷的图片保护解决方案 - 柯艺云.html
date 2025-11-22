@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>图夹工具 - 图片加密与隐藏分享工具 | 安全便捷的图片保护解决方案 - 柯艺云</title>
+    <meta name="description" content="图夹工具提供安全便捷的图片加密与分享解决方案，支持将多个文件隐藏在一张图片中，保护隐私内容。支持图片打包、解包、加密分享等功能，完全在浏览器本地处理，保障数据安全。">
+    <meta name="keywords" content="图片加密,图片隐藏,图片分享工具,图夹工具,图片打包,图片解包,隐私保护,图片安全分享,柯艺云图片文件夹">
+    <meta name="author" content="柯艺云">
+    <meta property="og:title" content="图夹工具 - 安全便捷的图片加密与分享解决方案 - 柯艺云">
+    <meta property="og:description" content="将多个文件隐藏在一张图片中，保护隐私内容，支持打包、解包、加密分享等功能，完全本地处理保障安全。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tj.qdqqd.com/">
+    <meta property="og:image" content="https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1754655258542_qdqqd_a53m6v.jpg">
+    <meta property="og:site_name" content="图夹工具">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="图夹工具 - 图片加密与隐藏分享工具 - 柯艺云">
+    <meta name="twitter:description" content="安全便捷的图片加密与分享解决方案，支持将多个文件隐藏在一张图片中。">
+    <meta name="twitter:image" content="https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1754655258542_qdqqd_a53m6v.jpg">
+    <link rel="icon" href="https://www.qdqqd.com/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="https://www.qdqqd.com/favicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1754655258542_qdqqd_a53m6v.jpg">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "图夹工具",
+      "description": "安全便捷的图片加密与分享解决方案，支持将多个文件隐藏在一张图片中",
+      "url": "https://tj.qdqqd.com/",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "CNY"
+      },
+      "creator": {
+        "@type": "Organization",
+        "name": "柯艺云"
+      },
+		"image":"https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1754655258542_qdqqd_a53m6v.jpg",
+    }
+    </script>
+    <meta name="robots" content="index, follow">
+    <meta name="revisit-after" content="7 days">
+    <meta name="theme-color" content="#5e72e4">
+	<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/noty/3.1.4/noty.min.css">
+	<script src="https://s4.zstatic.net/ajax/libs/noty/3.1.4/noty.min.js"></script>
+	<script src="https://coss.yupoo.com/upchat/2025-09-04/1756951246883.js"></script>
+	<script src="https://s4.zstatic.net/npm/@zip.js/zip.js@2.8.4/dist/zip.min.js"></script>
+    <script src="https://s4.zstatic.net/ajax/libs/pako/2.1.0/pako.min.js"></script>
+	<script src="https://coss.yupoo.com/upchat/2025-11-11/1762827628859.js" onerror="this.onerror=null;this.src='./worker-manager.js'"></script>
+	<script src="https://coss.yupoo.com/upchat/2025-11-03/1762162482221.js" onerror="this.onerror=null;this.src='./stegano-core.js'"></script>
+	<script src="https://coss.yupoo.com/upchat/2025-11-20/1763640164682.js" onerror="this.onerror=null;this.src='./12.js'"></script>
+	<meta name="msvalidate.01" content="1846696CECAE16F4E89317A9EF7EEA9D">
+	<link rel="stylesheet" href="https://coss.yupoo.com/upchat/2025-11-16/1763295496034.css">
+</head>
+<body oncontextmenu="return false" style="background: linear-gradient(to right, pink, lightblue); user-select: none;">
+    <div class="container">
+        <header>
+            <div class="logo-container">
+                <div class="logo">
+                    <i class="fas fa-images"></i>
+                </div>
+                <div class="header-content">
+                    <h1>图夹 / 图片文件夹</h1>
+                    <p class="subtitle">安全便捷的图片加密与分享解决方案</p>
+                </div>
+            </div>
+        </header>
+        <div class="announcement announcement-collapsible collapsed" tabindex="0">
+            <div class="announcement-header announcement-toggle">
+                <i class="fas fa-bullhorn"></i>
+                <span>分享提示</span>
+                <span class="ann-arrow"><i class="fas fa-chevron-down"></i></span>
+            </div>
+            <div class="announcement-content">
+                <a href="https://tc.qdqqd.com/" target="_blank" class="announcement-link">
+                    <div class="announcement-item">
+                        <i class="fas fa-share-alt"></i> 图床/视频床
+                    </div>
+                </a>
+    <a href="https://lts.wrnm.dpdns.org" target="_blank" class="announcement-link">
+    <div class="announcement-item">
+        <i class="fas fa-comment-dots"></i> 聊天室 99+
+    </div>
+    </a>
+                 <a href="./tphx/index.html" target="_blank" class="announcement-link">
+                    <div class="announcement-item">
+                        <i class="fas fa-image"></i> 小番茄/图片混淆
+                    </div>
+                </a>
+                <a href="./bqb/index.html" target="_blank" class="announcement-link">
+                    <div class="announcement-item">
+                        <i class="fas fa-laugh-beam"></i> 表情包混淆
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="main-cards">
+            <div class="app-card collapsible-card">
+                <div class="card-header collapsible-toggle" tabindex="0">
+                    <span><i class="fas fa-lock-open"></i> 图片解包</span>
+                    <span class="collapse-arrow"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="card-body collapsible-content">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-globe"></i> 网络图片解密
+                        </label>
+                        <input oncontextmenu="event.stopPropagation(); return true;" type="text" id="imageUrlInput" class="form-control" placeholder="输入图片URL或图语" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" id="networkDecryptBtn">
+                            <i class="fas fa-unlock"></i> 开始解密
+                        </button>
+                        <button class="btn btn-outline" id="copyLinkBtn">
+                            <i class="fas fa-copy"></i> 复制直链
+                        </button>
+    <button class="btn btn-outline" id="downloadUrlBtn">
+        <i class="fas fa-file-export"></i> URL转文件
+    </button>
+	<button id="generateSecretBtn" class="btn btn-outline">
+  <i class="fas fa-key"></i> 生成图语
+</button>
+                    </div>
+                    <div class="progress-container" id="progress-container" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressBarFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">0.00M/0.00M (0%)</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-desktop"></i> 本地图片解密
+                        </label>
+                        <div class="file-input-container">
+                            <label class="file-input-label" id="localDecryptLabel">
+                                <i class="fas fa-folder-open"></i> 选择本地图片
+                                <input type="file" id="localDecryptInput" style="display:none;" accept="image/*,video/*">
+                            </label>
+                        </div>
+                    </div>
+                    <div class="result-section" oncontextmenu="event.stopPropagation(); return true;">
+                        <div class="result-header">
+                            <div class="result-title">
+                                <i class="fas fa-archive"></i> 解包结果
+                            </div>
+                            <button class="btn btn-outline clear-result-btn" id="clearUnpackResult" style="display: none;">
+                                <i class="fas fa-trash"></i> 清空
+                            </button>
+                        </div>
+                        <div class="result-content" id="unpackResult">
+                            <div style="color: #aaa; text-align: center; padding: 23px 0;">
+                                <i class="fas fa-file-archive fa-2x"></i>
+                                <p>解包结果将显示在这里</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="app-card collapsible-card">
+                <div class="card-header collapsible-toggle" tabindex="0">
+                    <span><i class="fas fa-lock"></i> 图片打包</span>
+                    <span class="collapse-arrow"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="card-body collapsible-content">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-image"></i> 表图选择
+                        </label>
+                        <div class="cover-selection-area" style="margin-bottom: 15px;">
+                            <div class="selection-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <i class="fas fa-dice" style="color: var(--primary);"></i>
+                                <span style="font-weight: 500;">随机表图</span>
+                            </div>
+                            
+                            <div class="format-selector" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                                <button type="button" class="format-btn active" data-format="gif" style="flex: 1; min-width: 80px; padding: 8px 12px; border: 2px solid var(--primary); background: var(--primary); color: white; border-radius: 8px; font-size: 0.9rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                                    <i class="fas fa-film"></i> GIF
+                                </button>
+                                <button type="button" class="format-btn" data-format="png" style="flex: 1; min-width: 80px; padding: 8px 12px; border: 2px solid var(--border); background: white; color: var(--dark); border-radius: 8px; font-size: 0.9rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                                    <i class="fas fa-image"></i> PNG
+                                </button>
+                                <button type="button" id="customCoverBtn" style="padding: 8px 12px; border: 2px solid var(--secondary); background: var(--secondary); color: white; border-radius: 8px; font-size: 0.9rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                                    <i class="fas fa-upload"></i> 自定义表图
+                                </button>
+                            </div>
+                            
+                            <div class="current-cover-info" style="background: #f8f9fe; border: 1px solid var(--border); border-radius: 10px; padding: 12px; display: flex; align-items: center; gap: 12px;">
+                                <img id="currentCoverPreview" src="" alt="当前表图" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <div style="flex: 1; min-width: 0;">
+                                    <div id="coverFormatInfo" style="font-weight: 500; color: var(--primary); margin-bottom: 3px;">GIF格式 - 适用贴吧</div>
+                                    <div id="coverSizeInfo" style="font-size: 0.85rem; color: var(--gray);">加载中...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="custom-upload-area" style="display: none;">
+                            <div class="selection-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <i class="fas fa-upload" style="color: var(--secondary);"></i>
+                                <span style="font-weight: 500;">自定义上传</span>
+                            </div>
+                            
+                            <div class="file-input-container">
+                                <label class="file-input-label" id="customCoverLabel">
+                                    <i class="fas fa-folder-open"></i> 点击选择图片文件
+									<input type="file" id="coverFile" class="file-input" accept="image/*,video/*">
+                                </label>
+                            </div>
+                            <div id="customCoverPreview" class="preview-container" style="display:none; margin-top: 10px;">
+                                <div class="preview-item">
+                                    <img id="customCoverImg" src="" alt="自定义表图">
+                                    <button class="delete-btn" id="deleteCustomCover">×</button>
+                                </div>
+                                <div class="preview-label">自定义表图</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-file-image"></i> 里图
+                        </label>
+                        <div class="file-input-container">
+                            <label class="file-input-label">
+                                <i class="fas fa-folder-open"></i> 选择隐藏文件
+                                <input type="file" id="targetFile" class="file-input" multiple>
+                            </label>
+                        </div>
+                        <div id="targetPreview" class="preview-container" style="display:none;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-cogs"></i> 算法选择
+                        </label>
+                        <div class="options-row">
+                            <div class="option-item" title="动态混淆，速度快，适合快速分享">
+                                <input type="radio" id="algorithmDynamic" name="algorithm" value="dynamic" checked>
+                                <label for="algorithmDynamic" style="margin-left:5px; cursor:pointer;">
+                                    动态混淆（极速）
+                                </label>
+                            </div>
+                            <div class="option-item" title="图夹PRO算法，防AI检测，更安全">
+                                <input type="radio" id="algorithmStegano" name="algorithm" value="stegano">
+                                <label for="algorithmStegano" style="margin-left:5px; cursor:pointer;">
+                                    图夹PRO（防检测）
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="options-row">
+                        <div class="option-item">
+                            <label for="watermarkText" style="margin-right:4px;">水印:</label>
+                            <input type="text" id="watermarkText" class="form-control2" value="图夹" style="width:100%;">
+                        </div>
+                        <div class="option-item algorithm-stegano-only" title="图夹PRO密码" style="display:none;">
+                            <label for="encryptPasswordText" style="margin-right:4px;">密码:</label>
+                            <input type="text" id="encryptPasswordText" class="form-control2" placeholder="可选" style="width:100%;">
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="encryptBtn">
+                            <i class="fas fa-cogs"></i> 制作图夹
+                        </button>
+                    </div>
+                    <div class="result-section" oncontextmenu="event.stopPropagation(); return true;">
+                        <div class="result-header">
+                            <div class="result-title">
+                                <i class="fas fa-box"></i> 打包结果
+                            </div>
+                            <button class="btn btn-outline clear-result-btn" id="clearPackResult" style="display: none;">
+                                <i class="fas fa-trash"></i> 清空
+                            </button>
+                        </div>
+                        <div class="result-content" id="packResult">
+                            <div style="color: #aaa; text-align: center; padding: 23px 0;">
+                                <i class="fas fa-box-open fa-2x"></i>
+                                <p>打包结果将显示在这里</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="notice-card collapsible-card">
+                <div class="notice-header collapsible-toggle" tabindex="0">
+                    <span><i class="fas fa-info-circle"></i> 使用须知</span>
+                    <span class="collapse-arrow"><i class="fas fa-chevron-down"></i></span>
+                </div>
+				
+<div class="notice-body collapsible-content">
+    <div class="notice-item">
+        <strong>免责声明：</strong>
+        <ul style="padding-left:16px; margin-top:8px; list-style-type:disc;">
+            <li>本页面仅供技术研究使用，使用者做出的行为及后果本站与原作者概不负责！</li>
+            <li>打包/解包 由浏览器本地处理,速度快慢由设备性能决定！</li>
+            <li><a href="./help.html" target="_blank">图夹工具使用指南</a></li>
+			
+        </ul>
+    </div>
+
+    <div class="notice-item">
+        <strong>教学视频(热心网友提供)：</strong>
+        <ul style="padding-left:0; margin-top:8px; list-style:none;">
+            <li style="display:flex; align-items:center; margin-bottom:8px;">
+                <span style="display:inline-block; width:200px;">【解包视频】：</span>
+                <a href="https://coss.yupoo.com/upchat/2025-10-20/1760951772237.mp4" target="_blank"
+                   style="padding:6px 14px; font-size:0.85em; font-weight:600;
+                          color:#fff; background:#4caf50; border-radius:6px; text-decoration:none;
+                          box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+                    ▶ 点击观看
+                </a>
+            </li>
+            <li style="display:flex; align-items:center; margin-bottom:8px;">
+                <span style="display:inline-block; width:200px;">【打包视频】：</span>
+                <a href="https://coss.yupoo.com/upchat/2025-10-20/1760951749262.mp4" target="_blank"
+                   style="padding:6px 14px; font-size:0.85em; font-weight:600;
+                          color:#fff; background:#2196f3; border-radius:6px; text-decoration:none;
+                          box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+                    ▶ 点击观看
+                </a>
+            </li>
+            <li style="display:flex; align-items:center; margin-bottom:8px;">
+                <span style="display:inline-block; width:200px;">【图语视频】：</span>
+                <a href="https://coss.yupoo.com/upchat/2025-10-20/1760950272480.mp4" target="_blank"
+                   style="padding:6px 14px; font-size:0.85em; font-weight:600;
+                          color:#fff; background:#ff9800; border-radius:6px; text-decoration:none;
+                          box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+                    ▶ 点击观看
+                </a>
+            </li>
+            <li style="display:flex; align-items:center; margin-bottom:8px;">
+                <span style="display:inline-block; width:200px;">【URL转文件视频】：</span>
+                <a href="https://coss.yupoo.com/upchat/2025-10-20/1760951811279.mp4" target="_blank"
+                   style="padding:6px 14px; font-size:0.85em; font-weight:600;
+                          color:#fff; background:#9c27b0; border-radius:6px; text-decoration:none;
+                          box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+                    ▶ 点击观看
+                </a>
+            </li>
+            <li style="display:flex; align-items:center; margin-bottom:8px;">
+                <span style="display:inline-block; width:200px;">【图床视频】：</span>
+                <a href="https://coss.yupoo.com/upchat/2025-11-10/1762774841282.mp4" target="_blank"
+                   style="padding:6px 14px; font-size:0.85em; font-weight:600;
+                          color:#fff; background:#e0527d; border-radius:6px; text-decoration:none;
+                          box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+                    ▶ 点击观看
+                </a>
+            </li>
+           <li>贴吧图片链接长期有效(即便帖子被删除),所生成图语也长期有效</li>
+        </ul>
+    </div>
+</div>
+
+				
+            </div>
+        </div>
+        <footer>
+            <p>
+            ©2025 图夹工具 | <script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/Jfpcnt0H2uEfXtSf/quote.js?theme=#000000,#000000,#adb5bd,#adb5bd,#000000,#000000,14&f=14&display=0,0,0,0,0,0,0,1"></script>
+            </p>
+        </footer>
+    </div>
+    <div id="passwordModalTemplate" style="display: none;">
+        <div class="modal-content">
+            <button class="close-modal-btn" id="cancelBtn">&times;</button>
+            <div style="margin-bottom: 20px;">
+                <i class="fas fa-lock" style="font-size: 2em; color: var(--primary); margin-bottom: 15px;"></i>
+                <h3 style="margin: 10px 0; color: var(--dark);">检测到图夹PRO文件</h3>
+            </div>
+            <input type="text" class="modal-input" placeholder="请输入图夹密码" />
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" id="getPasswordBtn" style="display: none;">
+                    <i class="fas fa-key"></i> 获取密码
+                </button>
+                <button class="modal-btn modal-btn-primary" id="confirmBtn">
+                    <i class="fas fa-unlock"></i> 确认解密
+                </button>
+            </div>
+        </div>
+    </div>
+    <script>document.querySelectorAll('.announcement-toggle').forEach(function(btn){btn.addEventListener('click',function(e){var ann=btn.closest('.announcement-collapsible');ann.classList.toggle('collapsed');e.stopPropagation()})});document.querySelectorAll('.collapsible-toggle').forEach(function(btn,i){btn.addEventListener('click',function(){var card=btn.closest('.collapsible-card');card.classList.toggle('collapsed')});btn.addEventListener('keydown',function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();btn.click()}})});document.querySelectorAll('.collapsible-card').forEach(function(card,i){if(i!==0)card.classList.add('collapsed')});</script>
+<script>(function(){let devToolsDetected=false;let checkInterval=10000;function efficientCheck(){if(devToolsDetected)return;const startTime=Date.now();debugger;const debuggerTime=Date.now()-startTime;let constructorDetected=false;try{Function('debugger')()}catch(e){constructorDetected=e.toString().includes('Debugger')}if(debuggerTime>100||constructorDetected){devToolsDetected=true;setTimeout(()=>window.location.reload(),1000);return}if(debuggerTime>10){checkInterval=3000}else{checkInterval=10000+Math.random()*5000}setTimeout(efficientCheck,checkInterval)}document.addEventListener('keydown',function(e){const key=e.keyCode;if(key===123||(e.ctrlKey&&e.shiftKey&&[73,74,67].includes(key))){e.preventDefault();efficientCheck()}});setTimeout(efficientCheck,15000)})();</script>
+<div id="announcementModal" class="announcement-modal" style="display: none;">
+    <div class="announcement-modal-content">
+        <div class="announcement-modal-header">
+            <h3>📢 系统公告</h3>
+            <span class="announcement-close">&times;</span>
+        </div>
+        <div class="announcement-modal-body">
+            <p style="font-size: 1.1em; font-weight: 600; color: var(--primary); margin-bottom: 20px;">
+                全面适配IOS/安卓系统 ✅
+            </p>
+            <div style="margin: 15px 0;">
+                <p style="font-weight: 600; margin-bottom: 10px;">分享提示中添加“表情包混淆”入口</p><br>
+                <p style="font-weight: 600; margin-bottom: 10px;">📹 教学视频位于“使用须知”</p>
+            </div>
+            <p style="font-size: 0.9em; color: #666; margin-top: 20px; padding-top: 15px; border-top: 1px dashed #eee;">
+                公告版本：v2.1
+            </p>
+        </div>
+        <div class="announcement-modal-footer">
+            <button class="announcement-btn" id="dontShowAgainBtn">不再提醒</button>
+            <button class="announcement-btn announcement-btn-primary" id="confirmAnnouncementBtn">确定</button>
+        </div>
+    </div>
+</div>
+	    <div id="iosDownloadModalTemplate" style="display: none;">
+        <div class="ios-modal-content">
+            <h3 style="margin-top: 0; color: #5e72e4; text-align: center;">
+                <i class="fas fa-download"></i> iOS下载提示
+            </h3>
+            <p style="margin: 15px 0; line-height: 1.5; text-align: left;">
+                由于iOS系统限制，请按以下步骤保存文件：
+            </p>
+            <ol style="text-align: left; margin: 15px 0; padding-left: 20px;">
+                <li style="margin-bottom: 8px;">使用 Safari 浏览器</li>
+                <li style="margin-bottom: 8px;">长按图片</li>
+                <li style="margin-bottom: 8px;">选择"保存到图库"</li>
+            </ol>
+            <button class="ios-close-modal-btn" style="
+                background: #f5365c;
+                color: white;
+                border: none;
+                padding: 10px 15px;
+                border-radius: 8px;
+                font-size: 14px;
+                cursor: pointer;
+                width: 100%;
+                font-weight: 600;
+                transition: all 0.3s;
+            ">关闭</button>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('announcementModal');
+            const closeBtn = document.querySelector('.announcement-close');
+            const dontShowBtn = document.getElementById('dontShowAgainBtn');
+            const confirmBtn = document.getElementById('confirmAnnouncementBtn');
+            
+            const currentAnnouncementVersion = '2.1';
+            
+            const savedVersion = localStorage.getItem('announcementVersion');
+            const showAnnouncement = localStorage.getItem('showAnnouncement');
+            
+            if (savedVersion !== currentAnnouncementVersion || showAnnouncement !== 'false') {
+                setTimeout(function() {
+                    modal.style.display = 'flex';
+                }, 1000);
+            }
+            
+            function closeModal() {
+                modal.style.display = 'none';
+            }
+            
+            closeBtn.addEventListener('click', closeModal);
+            
+            dontShowBtn.addEventListener('click', function() {
+                localStorage.setItem('showAnnouncement', 'false');
+                localStorage.setItem('announcementVersion', currentAnnouncementVersion);
+                closeModal();
+            });
+            
+            confirmBtn.addEventListener('click', closeModal);
+            
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
+    <button id="backToTop" title="回到顶部">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var backToTopButton = document.getElementById("backToTop");
+            window.onscroll = function() {
+                if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                    backToTopButton.style.display = "block";
+                } else {
+                    backToTopButton.style.display = "none";
+                }
+            };
+            backToTopButton.addEventListener("click", function() {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
