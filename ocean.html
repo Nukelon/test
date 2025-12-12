@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>海浪模拟</title>
+  <style>
+    :root{
+      --panel-bg: rgba(10, 22, 30, 0.42);
+      --panel-brd: rgba(255,255,255,0.10);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.70);
+      --accent: rgba(120, 210, 255, 0.90);
+      --shadow: rgba(0,0,0,0.35);
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      overflow:hidden;
+      background: radial-gradient(1200px 700px at 70% 20%, #1a5466 0%, #0a2230 45%, #06161f 100%);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC","Microsoft YaHei", Arial;
+      color: var(--text);
+    }
+    #app{
+      position:fixed;
+      inset:0;
+    }
+    canvas{
+      display:block;
+      width:100%;
+      height:100%;
+    }
+
+    /* UI 面板：宁静、克制的玻璃质感 */
+    .panel{
+      position:fixed;
+      left:16px;
+      top:16px;
+      width:min(360px, calc(100% - 32px));
+      padding:14px 14px 12px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-brd);
+      border-radius: 14px;
+      box-shadow: 0 10px 30px var(--shadow);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      user-select:none;
+    }
+    .title{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .title h1{
+      font-size:16px;
+      letter-spacing:0.5px;
+      margin:0;
+      font-weight:650;
+    }
+    .title .hint{
+      font-size:12px;
+      color: var(--muted);
+      white-space:nowrap;
+    }
+    .row{
+      display:grid;
+      grid-template-columns: 92px 1fr 64px;
+      align-items:center;
+      gap:10px;
+      padding:8px 0;
+    }
+    .label{
+      font-size:13px;
+      color: var(--muted);
+    }
+    input[type="range"]{
+      width:100%;
+      accent-color: var(--accent);
+    }
+    .val{
+      font-variant-numeric: tabular-nums;
+      font-size:13px;
+      text-align:right;
+      color: rgba(255,255,255,0.88);
+    }
+    .footer{
+      margin-top:10px;
+      padding-top:10px;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+    .btn{
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.88);
+      padding:8px 10px;
+      border-radius: 10px;
+      cursor:pointer;
+      font-size:12px;
+    }
+    .btn:hover{
+      background: rgba(255,255,255,0.09);
+    }
+    .note{
+      font-size:12px;
+      color: rgba(255,255,255,0.62);
+      line-height:1.35;
+    }
+
+    /* 右下角信息（低调） */
+    .badge{
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(10, 22, 30, 0.28);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: rgba(255,255,255,0.70);
+      font-size: 12px;
+      letter-spacing: 0.2px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <div class="panel" aria-label="控制面板">
+    <div class="title">
+      <h1>海浪模拟</h1>
+      <div class="hint">宁静 · 真实 · 可调</div>
+    </div>
+
+    <div class="row">
+      <div class="label">风速</div>
+      <input id="wind" type="range" min="0" max="30" step="0.1" value="8" />
+      <div class="val" id="windVal">8.0</div>
+    </div>
+
+    <div class="row">
+      <div class="label">浪高</div>
+      <input id="height" type="range" min="0" max="5" step="0.01" value="1.2" />
+      <div class="val" id="heightVal">1.20</div>
+    </div>
+
+    <div class="row">
+      <div class="label">光照</div>
+      <input id="light" type="range" min="0.2" max="2.0" step="0.01" value="1.0" />
+      <div class="val" id="lightVal">1.00</div>
+    </div>
+
+    <div class="footer">
+      <button class="btn" id="reset">恢复默认</button>
+      <div class="note">提示：调低风速与浪高可获得更“平静”的海面；提高光照可增强阳光反射与高光闪烁。</div>
+    </div>
+  </div>
+
+  <div class="badge">WebGL 海面着色器 · Gerstner Waves</div>
+
+  <script type="module">
+    import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+
+    const app = document.getElementById("app");
+
+    // ---------- 基础场景 ----------
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x06161f, 0.012);
+
+    const camera = new THREE.PerspectiveCamera(
+      55,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      2000
+    );
+    // 固定、宁静的取景
+    camera.position.set(0, 28, 86);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    app.appendChild(renderer.domElement);
+
+    // ---------- “天空”背景（简洁但柔和） ----------
+    // 用一个大球体做渐变天空，营造宁静氛围
+    const skyGeo = new THREE.SphereGeometry(1200, 32, 16);
+    const skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      uniforms: {
+        uTop: { value: new THREE.Color("#1f6a7a") },
+        uBottom: { value: new THREE.Color("#06161f") },
+        uOffset: { value: 20.0 },
+        uExponent: { value: 0.85 }
+      },
+      vertexShader: `
+        varying vec3 vWorldPos;
+        void main(){
+          vec4 worldPos = modelMatrix * vec4(position, 1.0);
+          vWorldPos = worldPos.xyz;
+          gl_Position = projectionMatrix * viewMatrix * worldPos;
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vWorldPos;
+        uniform vec3 uTop;
+        uniform vec3 uBottom;
+        uniform float uOffset;
+        uniform float uExponent;
+        void main(){
+          float h = normalize(vWorldPos + vec3(0.0,uOffset,0.0)).y;
+          float t = pow(max(h, 0.0), uExponent);
+          vec3 col = mix(uBottom, uTop, t);
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `
+    });
+    const sky = new THREE.Mesh(skyGeo, skyMat);
+    scene.add(sky);
+
+    // ---------- 海面着色器（Gerstner Waves + 近似法线 + 反射/菲涅尔/泡沫） ----------
+    const oceanUniforms = {
+      uTime: { value: 0 },
+      uWind: { value: 8.0 },        // 风速
+      uAmp:  { value: 1.2 },        // 浪高（总幅度）
+      uLightStrength: { value: 1.0 }, // 光照强度
+      uSunDir: { value: new THREE.Vector3(0.35, 0.72, 0.55).normalize() },
+      uDeepColor: { value: new THREE.Color("#06212b") },
+      uShallowColor: { value: new THREE.Color("#0b6a73") },
+      uSkyColor: { value: new THREE.Color("#1f6a7a") }
+    };
+
+    const oceanMat = new THREE.ShaderMaterial({
+      uniforms: oceanUniforms,
+      transparent: false,
+      fog: true,
+      vertexShader: `
+        uniform float uTime;
+        uniform float uWind;
+        uniform float uAmp;
+
+        varying vec3 vWorldPos;
+        varying vec3 vNormalW;
+        varying float vFoamHint;
+
+        // Gerstner Wave
+        vec3 gerstner(vec2 xz, vec2 dir, float wavelength, float steepness, float speed, float amp, out float crest){
+          float k = 6.28318530718 / wavelength;
+          float c = sqrt(9.8 / k) * speed;
+          float f = k * (dot(dir, xz) - c * uTime);
+          float a = amp / k;
+
+          // crest hint: 用 sin/cos 组合近似“尖顶”强度
+          crest = pow(max(0.0, sin(f)*0.5 + 0.5), 3.0);
+
+          float s = sin(f);
+          float co = cos(f);
+
+          // 位移：x/z 方向也会偏移（更真实）
+          float q = steepness / (k * a * 4.0 + 1.0);
+          vec3 disp;
+          disp.x = q * a * dir.x * co;
+          disp.y = a * s;
+          disp.z = q * a * dir.y * co;
+
+          return disp;
+        }
+
+        // 计算某点的位移（用于法线差分）
+        vec3 oceanDisplacement(vec2 xz, out float foamCrest){
+          vec3 d = vec3(0.0);
+          float crestSum = 0.0;
+
+          // 风速影响：速度与整体波能量（略微）随风速上升
+          float wind = max(uWind, 0.0);
+          float energy = mix(0.35, 1.0, clamp(wind / 22.0, 0.0, 1.0));
+          float ampBase = uAmp * energy;
+
+          // 方向以主风向为主，叠加少量交叉浪
+          vec2 d0 = normalize(vec2(0.86, 0.52));
+          vec2 d1 = normalize(vec2(-0.25, 0.97));
+          vec2 d2 = normalize(vec2(0.98, -0.20));
+          vec2 d3 = normalize(vec2(-0.75, -0.66));
+
+          float c;
+
+          d += gerstner(xz, d0, 32.0, 0.95, 1.05 + wind*0.020, ampBase*1.00, c); crestSum += c*0.50;
+          d += gerstner(xz, d1, 18.0, 0.85, 1.15 + wind*0.018, ampBase*0.55, c); crestSum += c*0.30;
+          d += gerstner(xz, d2, 11.0, 0.75, 1.25 + wind*0.016, ampBase*0.32, c); crestSum += c*0.14;
+          d += gerstner(xz, d3,  6.5, 0.62, 1.40 + wind*0.014, ampBase*0.18, c); crestSum += c*0.06;
+
+          foamCrest = clamp(crestSum, 0.0, 1.0);
+          return d;
+        }
+
+        void main(){
+          vec3 pos = position;
+
+          float crest;
+          vec3 disp = oceanDisplacement(pos.xz, crest);
+          pos += disp;
+
+          // 法线：用差分近似（比“原始法线”真实很多）
+          float eps = 0.15;
+          float c1; float c2;
+          vec3 dispX = oceanDisplacement(position.xz + vec2(eps, 0.0), c1);
+          vec3 dispZ = oceanDisplacement(position.xz + vec2(0.0, eps), c2);
+
+          vec3 p  = vec3(position.x, 0.0, position.z) + disp;
+          vec3 px = vec3(position.x + eps, 0.0, position.z) + dispX;
+          vec3 pz = vec3(position.x, 0.0, position.z + eps) + dispZ;
+
+          vec3 n = normalize(cross(pz - p, px - p)); // 注意顺序以保持朝上
+          vec4 worldPos = modelMatrix * vec4(pos, 1.0);
+
+          vWorldPos = worldPos.xyz;
+          vNormalW = normalize(mat3(modelMatrix) * n);
+
+          // 泡沫提示：结合 crest 与坡度
+          float slope = 1.0 - clamp(n.y, 0.0, 1.0);
+          vFoamHint = clamp(crest * 0.75 + slope * 0.65, 0.0, 1.0);
+
+          gl_Position = projectionMatrix * viewMatrix * worldPos;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uSunDir;
+        uniform float uLightStrength;
+        uniform vec3 uDeepColor;
+        uniform vec3 uShallowColor;
+        uniform vec3 uSkyColor;
+
+        varying vec3 vWorldPos;
+        varying vec3 vNormalW;
+        varying float vFoamHint;
+
+        // 简易噪声：用于泡沫碎裂
+        float hash(vec2 p){
+          p = fract(p * vec2(123.34, 456.21));
+          p += dot(p, p + 34.345);
+          return fract(p.x * p.y);
+        }
+
+        void main(){
+          vec3 N = normalize(vNormalW);
+          vec3 V = normalize(cameraPosition - vWorldPos);
+          vec3 L = normalize(uSunDir);
+
+          // 菲涅尔：视角越掠射越反射天空
+          float fresnel = pow(1.0 - max(dot(N, V), 0.0), 5.0);
+
+          // 深浅色：用法线朝上程度近似“浅色翻光”
+          float up = clamp(N.y, 0.0, 1.0);
+          vec3 waterBase = mix(uDeepColor, uShallowColor, pow(up, 2.0));
+
+          // 漫反射（很克制，海水主要靠镜面与菲涅尔）
+          float diff = max(dot(N, L), 0.0);
+          vec3 diffuse = waterBase * (0.12 + 0.18 * diff) * uLightStrength;
+
+          // 镜面高光：海面“闪烁”的核心
+          vec3 H = normalize(L + V);
+          float specPow = 180.0; // 高光更尖，更“水面”
+          float spec = pow(max(dot(N, H), 0.0), specPow);
+          vec3 specular = vec3(1.0, 0.98, 0.92) * spec * (0.9 + 0.6 * uLightStrength);
+
+          // 天空反射（菲涅尔混合）
+          vec3 reflectedSky = mix(waterBase, uSkyColor, 0.9);
+          vec3 col = mix(waterBase, reflectedSky, clamp(fresnel * 1.05, 0.0, 1.0));
+          col += diffuse;
+          col += specular;
+
+          // 泡沫：浪尖 + 斜率；并添加少量破碎感
+          float n = hash(vWorldPos.xz * 0.35);
+          float foam = smoothstep(0.58, 0.95, vFoamHint) * (0.6 + 0.4 * n);
+          vec3 foamCol = vec3(0.92, 0.97, 1.0);
+          col = mix(col, foamCol, foam * 0.65);
+
+          // 轻微“日光金线”增强（不夸张）
+          float glitter = pow(max(dot(reflect(-L, N), V), 0.0), 80.0);
+          col += vec3(1.0, 0.96, 0.85) * glitter * 0.12 * uLightStrength;
+
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `
+    });
+
+    // 海面几何：大平面 + 足够细分
+    const size = 1200;
+    const seg = 320; // 兼顾细节与性能
+    const oceanGeo = new THREE.PlaneGeometry(size, size, seg, seg);
+    oceanGeo.rotateX(-Math.PI / 2);
+
+    const ocean = new THREE.Mesh(oceanGeo, oceanMat);
+    ocean.position.y = 0.0;
+    scene.add(ocean);
+
+    // 环境光（很柔）
+    const ambient = new THREE.AmbientLight(0xffffff, 0.35);
+    scene.add(ambient);
+
+    // “太阳”方向光（主要照明）
+    const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+    sun.position.set(60, 120, 90);
+    scene.add(sun);
+
+    // ---------- UI 控制 ----------
+    const $wind = document.getElementById("wind");
+    const $height = document.getElementById("height");
+    const $light = document.getElementById("light");
+    const $windVal = document.getElementById("windVal");
+    const $heightVal = document.getElementById("heightVal");
+    const $lightVal = document.getElementById("lightVal");
+    const $reset = document.getElementById("reset");
+
+    function setVals(){
+      const w = parseFloat($wind.value);
+      const h = parseFloat($height.value);
+      const li = parseFloat($light.value);
+
+      $windVal.textContent = w.toFixed(1);
+      $heightVal.textContent = h.toFixed(2);
+      $lightVal.textContent = li.toFixed(2);
+
+      oceanUniforms.uWind.value = w;
+      oceanUniforms.uAmp.value = h;
+      oceanUniforms.uLightStrength.value = li;
+
+      // 同步“太阳”强度与环境光，保持整体宁静
+      sun.intensity = 0.85 * li;
+      ambient.intensity = 0.28 + 0.18 * li;
+
+      // 曝光随光照微调，避免过曝/过暗
+      renderer.toneMappingExposure = 0.98 + 0.12 * li;
+    }
+
+    $wind.addEventListener("input", setVals);
+    $height.addEventListener("input", setVals);
+    $light.addEventListener("input", setVals);
+
+    $reset.addEventListener("click", () => {
+      $wind.value = "8";
+      $height.value = "1.2";
+      $light.value = "1.0";
+      setVals();
+    });
+
+    setVals();
+
+    // ---------- 动画循环 ----------
+    const clock = new THREE.Clock();
+
+    function animate(){
+      const t = clock.getElapsedTime();
+      oceanUniforms.uTime.value = t;
+
+      // 让太阳方向非常轻微地变化，增加“自然感”
+      const drift = 0.06 * Math.sin(t * 0.05);
+      oceanUniforms.uSunDir.value.set(0.35 + drift, 0.72, 0.55).normalize();
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // ---------- 自适应 ----------
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
