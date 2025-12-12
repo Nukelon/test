@@ -28,7 +28,7 @@
     .panel{
       position:fixed;
       left:16px; top:16px;
-      width:min(390px, calc(100% - 32px));
+      width:min(400px, calc(100% - 32px));
       padding:14px 14px 12px;
       background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)) , var(--glass);
       border: 1px solid var(--brd);
@@ -61,7 +61,7 @@
     }
     .row{
       display:grid;
-      grid-template-columns: 92px 1fr 70px;
+      grid-template-columns: 92px 1fr 76px;
       align-items:center;
       gap:10px;
       padding:9px 0;
@@ -123,7 +123,7 @@
   <div class="panel" aria-label="控制面板">
     <div class="title">
       <h1>海浪模拟</h1>
-      <div class="chip">精致后期 · Bloom</div>
+      <div class="chip">精致后期 · Bloom（已修复泛滥）</div>
     </div>
 
     <div class="row">
@@ -134,8 +134,8 @@
 
     <div class="row">
       <div class="label">浪高</div>
-      <input id="height" type="range" min="0" max="6" step="0.01" value="1.3" />
-      <div class="val" id="heightVal">1.30</div>
+      <input id="height" type="range" min="0" max="6" step="0.01" value="1.4" />
+      <div class="val" id="heightVal">1.40</div>
     </div>
 
     <div class="row">
@@ -149,11 +149,11 @@
         <button class="btn" id="reset">恢复默认</button>
         <button class="btn" id="cinema">电影感</button>
       </div>
-      <div class="note">建议：风速 6–12、浪高 0.8–1.8 更“宁静”；光照越高，闪烁与辉光越明显。</div>
+      <div class="note">如果你仍觉得“太平”，把浪高调到 1.8–2.6；要更宁静，把风速 6–10、浪高 0.9–1.6。</div>
     </div>
   </div>
 
-  <div class="badge">Microfacet BRDF · fbm Foam · Bloom Post</div>
+  <div class="badge">Microfacet BRDF · fbm Foam · Half-Res Bloom</div>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
@@ -171,18 +171,20 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+
+    // 关键：避免“渲染目标里先 ACES，再合成里再 film curve”导致细节被洗掉
+    renderer.toneMapping = THREE.NoToneMapping;
     renderer.autoClear = true;
     app.appendChild(renderer.domElement);
 
     // ---------- Scene / Camera ----------
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x06161f, 0.0105);
+    scene.fog = new THREE.FogExp2(0x06161f, 0.010);
 
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 3000);
-    camera.position.set(0, 26, 92);
-    camera.lookAt(0, 0, 0);
+    // 更掠射、更“见波纹”的构图
+    camera.position.set(0, 18, 84);
+    camera.lookAt(0, 0, -40);
 
     // ---------- Sky (gradient + sun disk) ----------
     const skyUniforms = {
@@ -220,14 +222,12 @@
             float h = clamp(d.y*0.5+0.5, 0.0, 1.0);
             vec3 col = mix(uBottom, uTop, pow(h, 1.10));
 
-            // 太阳盘（柔和边缘）
             float sun = max(dot(d, normalize(uSunDir)), 0.0);
-            float disk = smoothstep(0.9992, 0.99995, sun);
-            float halo = smoothstep(0.985, 0.9992, sun) * 0.18;
-            col += uSunCol * (disk*1.35 + halo) * uSunStrength;
+            float disk = smoothstep(0.99925, 0.99995, sun);
+            float halo = smoothstep(0.985, 0.99925, sun) * 0.16;
+            col += uSunCol * (disk*1.25 + halo) * uSunStrength;
 
-            // 顶部轻微去饱和，观感更“宁静”
-            col = mix(col, vec3(dot(col, vec3(0.299,0.587,0.114))), 0.06);
+            col = mix(col, vec3(dot(col, vec3(0.299,0.587,0.114))), 0.05);
             gl_FragColor = vec4(col, 1.0);
           }
         `
@@ -243,17 +243,16 @@
     sun.position.set(80, 140, 90);
     scene.add(sun);
 
-    // ---------- Ocean (Gerstner spectrum + microfacet BRDF + foam fbm) ----------
+    // ---------- Ocean ----------
     const oceanUniforms = {
       uTime: { value: 0 },
       uWind: { value: 8.0 },
-      uAmp:  { value: 1.3 },
+      uAmp:  { value: 1.4 },
       uLight: { value: 1.0 },
       uSunDir: { value: skyUniforms.uSunDir.value.clone() },
       uSkyTop: { value: skyUniforms.uTop.value.clone() },
       uSkyBottom: { value: skyUniforms.uBottom.value.clone() },
-      uSunCol: { value: skyUniforms.uSunCol.value.clone() },
-      uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+      uSunCol: { value: skyUniforms.uSunCol.value.clone() }
     };
 
     const oceanMat = new THREE.ShaderMaterial({
@@ -271,7 +270,6 @@
         varying float vFoam;
         varying float vCrest;
 
-        // Gerstner wave
         vec3 gerstner(vec2 xz, vec2 dir, float wl, float steep, float spd, float amp, out float crest){
           float k = 6.28318530718 / wl;
           float c = sqrt(9.8 / k) * spd;
@@ -281,56 +279,49 @@
           float s = sin(f);
           float co = cos(f);
 
-          // crest hint: 强调浪尖
-          crest = pow(max(0.0, s*0.5 + 0.5), 3.2);
+          crest = pow(max(0.0, s*0.5 + 0.5), 3.0);
 
           float q = steep / (k * a * 6.0 + 1.0);
           return vec3(q * a * dir.x * co, a * s, q * a * dir.y * co);
         }
 
-        // 多组波叠加：更“海面”而非“池水”
+        // 不用数组初始化（更稳），明确叠加谱
         vec3 oceanDisp(vec2 xz, out float crestSum){
           float wind = max(uWind, 0.0);
-          float energy = mix(0.28, 1.18, clamp(wind/22.0, 0.0, 1.0));
+          float energy = mix(0.30, 1.20, clamp(wind/22.0, 0.0, 1.0));
           float A = uAmp * energy;
 
-          // 依据风速轻微调频
           float ws = 1.0 + wind * 0.018;
 
           vec3 d = vec3(0.0);
           crestSum = 0.0;
-
-          // 8组主波 + 4组细碎波（对性能要求较高，但你说不用在意开销）
-          vec2 dirs[12];
-          dirs[0]=normalize(vec2(0.86, 0.52));
-          dirs[1]=normalize(vec2(0.44, 0.90));
-          dirs[2]=normalize(vec2(-0.25, 0.97));
-          dirs[3]=normalize(vec2(0.98, -0.20));
-          dirs[4]=normalize(vec2(-0.75, -0.66));
-          dirs[5]=normalize(vec2(0.18, -0.98));
-          dirs[6]=normalize(vec2(0.66, -0.75));
-          dirs[7]=normalize(vec2(-0.98, 0.22));
-          dirs[8]=normalize(vec2(0.90, 0.44));
-          dirs[9]=normalize(vec2(-0.52, 0.86));
-          dirs[10]=normalize(vec2(0.12, 0.99));
-          dirs[11]=normalize(vec2(-0.99, -0.12));
-
           float c;
 
-          d += gerstner(xz, dirs[0],  42.0, 0.95, 1.02*ws, A*1.00, c); crestSum += c*0.40;
-          d += gerstner(xz, dirs[1],  28.0, 0.92, 1.10*ws, A*0.62, c); crestSum += c*0.26;
-          d += gerstner(xz, dirs[2],  18.0, 0.88, 1.18*ws, A*0.44, c); crestSum += c*0.18;
-          d += gerstner(xz, dirs[3],  13.0, 0.82, 1.26*ws, A*0.30, c); crestSum += c*0.09;
-          d += gerstner(xz, dirs[4],  10.0, 0.76, 1.34*ws, A*0.22, c); crestSum += c*0.05;
-          d += gerstner(xz, dirs[5],   7.5, 0.68, 1.42*ws, A*0.16, c); crestSum += c*0.03;
-          d += gerstner(xz, dirs[6],   5.3, 0.60, 1.52*ws, A*0.11, c); crestSum += c*0.02;
-          d += gerstner(xz, dirs[7],   3.7, 0.52, 1.62*ws, A*0.07, c); crestSum += c*0.01;
+          vec2 d0 = normalize(vec2(0.86, 0.52));
+          vec2 d1 = normalize(vec2(0.44, 0.90));
+          vec2 d2 = normalize(vec2(-0.25, 0.97));
+          vec2 d3 = normalize(vec2(0.98, -0.20));
+          vec2 d4 = normalize(vec2(-0.75, -0.66));
+          vec2 d5 = normalize(vec2(0.18, -0.98));
+          vec2 d6 = normalize(vec2(0.66, -0.75));
+          vec2 d7 = normalize(vec2(-0.98, 0.22));
 
-          // 细碎波：让高光更“碎”，更像真实海面
-          d += gerstner(xz*1.4, dirs[8],   2.4, 0.48, 1.75*ws, A*0.045, c); crestSum += c*0.015;
-          d += gerstner(xz*1.8, dirs[9],   1.9, 0.44, 1.85*ws, A*0.038, c); crestSum += c*0.012;
-          d += gerstner(xz*2.2, dirs[10],  1.5, 0.40, 1.95*ws, A*0.030, c); crestSum += c*0.010;
-          d += gerstner(xz*2.8, dirs[11],  1.2, 0.36, 2.05*ws, A*0.022, c); crestSum += c*0.008;
+          d += gerstner(xz, d0,  44.0, 0.95, 1.02*ws, A*1.00, c); crestSum += c*0.40;
+          d += gerstner(xz, d1,  30.0, 0.92, 1.10*ws, A*0.62, c); crestSum += c*0.26;
+          d += gerstner(xz, d2,  20.0, 0.88, 1.18*ws, A*0.44, c); crestSum += c*0.18;
+          d += gerstner(xz, d3,  14.0, 0.82, 1.26*ws, A*0.30, c); crestSum += c*0.09;
+          d += gerstner(xz, d4,  10.5, 0.76, 1.34*ws, A*0.22, c); crestSum += c*0.05;
+          d += gerstner(xz, d5,   7.8, 0.68, 1.42*ws, A*0.16, c); crestSum += c*0.03;
+          d += gerstner(xz, d6,   5.6, 0.60, 1.52*ws, A*0.11, c); crestSum += c*0.02;
+          d += gerstner(xz, d7,   4.0, 0.52, 1.62*ws, A*0.07, c); crestSum += c*0.01;
+
+          // 细碎波（强化“高光碎裂”）
+          vec2 d8  = normalize(vec2(0.90, 0.44));
+          vec2 d9  = normalize(vec2(-0.52, 0.86));
+          vec2 d10 = normalize(vec2(0.12, 0.99));
+          d += gerstner(xz*1.6, d8,   2.6, 0.48, 1.78*ws, A*0.050, c); crestSum += c*0.015;
+          d += gerstner(xz*2.1, d9,   1.9, 0.44, 1.88*ws, A*0.040, c); crestSum += c*0.012;
+          d += gerstner(xz*2.7, d10,  1.4, 0.40, 1.98*ws, A*0.030, c); crestSum += c*0.010;
 
           crestSum = clamp(crestSum, 0.0, 1.0);
           return d;
@@ -343,7 +334,7 @@
           vec3 disp = oceanDisp(pos.xz, crest);
           pos += disp;
 
-          // 法线差分（更细的 eps 提升细节；开销也更高）
+          // 法线差分：更细腻
           float eps = 0.10;
           float c1; float c2;
           vec3 dispX = oceanDisp(position.xz + vec2(eps, 0.0), c1);
@@ -355,11 +346,8 @@
 
           vec3 n = normalize(cross(pz - p, px - p));
 
-          // 泡沫：浪尖 + 斜率
           float slope = 1.0 - clamp(n.y, 0.0, 1.0);
-          float foamBase = clamp(crest*0.85 + slope*0.75, 0.0, 1.0);
-
-          vFoam = foamBase;
+          vFoam = clamp(crest*0.85 + slope*0.75, 0.0, 1.0);
           vCrest = crest;
 
           vec4 wp = modelMatrix * vec4(pos,1.0);
@@ -384,7 +372,9 @@
         varying float vFoam;
         varying float vCrest;
 
-        // ---- fbm noise (2D) ----
+        float saturate(float x){ return clamp(x, 0.0, 1.0); }
+
+        // ---- fbm noise ----
         float hash(vec2 p){
           p = fract(p * vec2(123.34, 456.21));
           p += dot(p, p + 34.345);
@@ -412,20 +402,16 @@
           return v;
         }
 
-        // ---- Microfacet BRDF (GGX) ----
-        float saturate(float x){ return clamp(x, 0.0, 1.0); }
-
+        // ---- GGX microfacet ----
         vec3 fresnelSchlick(float cosTheta, vec3 F0){
           return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
         }
-
         float D_GGX(float NoH, float rough){
           float a  = rough*rough;
           float a2 = a*a;
           float d = (NoH*NoH)*(a2 - 1.0) + 1.0;
           return a2 / max(3.14159265 * d*d, 1e-6);
         }
-
         float V_SmithGGXCorrelated(float NoV, float NoL, float rough){
           float a = rough*rough;
           float gv = NoL * sqrt(max(NoV*(NoV*(1.0-a)+a), 1e-6));
@@ -433,15 +419,13 @@
           return 0.5 / max(gv + gl, 1e-6);
         }
 
-        // 天空颜色采样：根据反射方向 y 分量
         vec3 sampleSky(vec3 dir){
           float t = saturate(dir.y*0.5 + 0.5);
           vec3 col = mix(uSkyBottom, uSkyTop, pow(t, 1.10));
-          // 太阳反射热点（极小盘 + 光晕）
           float sun = max(dot(normalize(dir), normalize(uSunDir)), 0.0);
-          float disk = smoothstep(0.9993, 0.99995, sun);
-          float halo = smoothstep(0.985, 0.9993, sun) * 0.12;
-          col += uSunCol * (disk*1.10 + halo) * uLight;
+          float disk = smoothstep(0.99935, 0.99996, sun);
+          float halo = smoothstep(0.987, 0.99935, sun) * 0.10;
+          col += uSunCol * (disk*1.05 + halo) * uLight;
           return col;
         }
 
@@ -456,75 +440,61 @@
           float NoH = saturate(dot(N, H));
           float VoH = saturate(dot(V, H));
 
-          // 粗糙度：风越大、水面越“碎”；坡度越大粗糙度略升
           float slope = 1.0 - saturate(N.y);
           float windR = saturate(uWind / 22.0);
-          float rough = clamp(0.045 + 0.18*windR + 0.10*slope, 0.035, 0.35);
+          float rough = clamp(0.05 + 0.16*windR + 0.10*slope, 0.04, 0.32);
 
-          // 水的 F0（略带色）
           vec3 F0 = vec3(0.02, 0.028, 0.035);
 
-          // BRDF spec
           float D = D_GGX(NoH, rough);
           float Vis = V_SmithGGXCorrelated(NoV, NoL, rough);
           vec3  F = fresnelSchlick(VoH, F0);
           vec3  spec = (D * Vis) * F * NoL;
 
-          // 反射：菲涅尔控制
           vec3 R = reflect(-V, N);
           vec3 skyRefl = sampleSky(R);
 
-          // 吸收/散射：用 NoV + “远处更深”做近似
           float dist = length(cameraPosition - vWorldPos);
           float depthApprox = saturate(dist / 520.0);
-          vec3 deepCol = vec3(0.02, 0.12, 0.16);
-          vec3 shallowCol = vec3(0.05, 0.40, 0.43);
-
-          // 近处更清透、远处更深
+          vec3 deepCol = vec3(0.015, 0.09, 0.13);
+          vec3 shallowCol = vec3(0.045, 0.35, 0.40);
           vec3 waterCol = mix(shallowCol, deepCol, pow(depthApprox, 1.25));
 
-          // 基础漫反射（非常克制）
-          vec3 diffuse = waterCol * (0.06 + 0.10*NoL) * uLight;
-
-          // 菲涅尔：掠射更反射天空
           float fres = pow(1.0 - NoV, 5.0);
-          vec3 col = mix(waterCol, skyRefl, saturate(0.18 + 0.92*fres));
+          vec3 col = mix(waterCol, skyRefl, saturate(0.20 + 0.90*fres));
 
-          // 把 spec 加进去（乘以光照强度）
-          col += spec * (1.2 + 1.1*uLight);
+          // 让“起伏”更可见：补一点克制的体积感
+          col += waterCol * (0.05 + 0.10*NoL) * uLight;
 
-          // 漫反射补一点体积感
-          col += diffuse;
+          // 镜面高光是水面的灵魂
+          col += spec * (1.10 + 1.10*uLight);
 
-          // 泡沫：浪尖与斜率 + fbm 破碎
+          // 泡沫：浪尖+斜率+fbm 破碎
           float n = fbm(vWorldPos.xz * 0.12 + vec2(0.0, 0.25));
-          float foamMask = smoothstep(0.60, 0.95, vFoam) * (0.55 + 0.45*n);
-
-          // 浪尖白更亮
-          float crestBoost = smoothstep(0.70, 1.0, vCrest) * 0.45;
+          float foamMask = smoothstep(0.62, 0.96, vFoam) * (0.55 + 0.45*n);
+          float crestBoost = smoothstep(0.72, 1.0, vCrest) * 0.40;
           vec3 foamCol = vec3(0.90, 0.97, 1.00) * (1.0 + crestBoost);
-
           col = mix(col, foamCol, foamMask * 0.70);
 
-          // “闪烁”增强：小粗糙度时更明显
+          // 微闪烁（克制）
           float glitter = pow(saturate(dot(reflect(-L, N), V)), 90.0);
-          col += uSunCol * glitter * (0.10 + 0.20*(1.0-rough)) * uLight;
+          col += uSunCol * glitter * (0.08 + 0.14*(1.0-rough)) * uLight;
 
           gl_FragColor = vec4(col, 1.0);
         }
       `
     });
 
-    // 海面几何（更高细分，精致优先）
-    const oceanSize = 1800;
-    const oceanSeg  = 640; // 非常重，但你不在意性能
+    // 海面几何（精致优先）
+    const oceanSize = 2000;
+    const oceanSeg  = 700; // 极重：你说不必在意性能
     const oceanGeo = new THREE.PlaneGeometry(oceanSize, oceanSize, oceanSeg, oceanSeg);
     oceanGeo.rotateX(-Math.PI/2);
     const ocean = new THREE.Mesh(oceanGeo, oceanMat);
     ocean.frustumCulled = false;
     scene.add(ocean);
 
-    // ---------- Custom Post: Scene -> BrightPass -> BlurH/V -> Composite ----------
+    // ---------- Post: Half-Res Bloom + Composite ----------
     const rtParams = {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
@@ -535,26 +505,29 @@
     };
 
     let rtScene = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, rtParams);
-    let rtBright = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, rtParams);
-    let rtBlur1 = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, rtParams);
-    let rtBlur2 = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, rtParams);
+
+    function bloomSize(){
+      const w = Math.max(1, Math.floor(window.innerWidth  * 0.5));
+      const h = Math.max(1, Math.floor(window.innerHeight * 0.5));
+      return {w,h};
+    }
+    let bs = bloomSize();
+    let rtBright = new THREE.WebGLRenderTarget(bs.w, bs.h, rtParams);
+    let rtBlur1  = new THREE.WebGLRenderTarget(bs.w, bs.h, rtParams);
+    let rtBlur2  = new THREE.WebGLRenderTarget(bs.w, bs.h, rtParams);
 
     const postScene = new THREE.Scene();
     const postCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
-
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), new THREE.MeshBasicMaterial());
     postScene.add(quad);
 
     const brightMat = new THREE.ShaderMaterial({
       uniforms: {
         tScene: { value: null },
-        uThreshold: { value: 0.78 }, // 越低 bloom 越强
-        uKnee: { value: 0.35 }
+        uThreshold: { value: 1.10 },  // 关键：提高阈值，避免全屏泛滥
+        uKnee: { value: 0.10 }        // 更小膝区，减少“雾化”
       },
-      vertexShader: `
-        varying vec2 vUv;
-        void main(){ vUv = uv; gl_Position = vec4(position.xy,0.0,1.0); }
-      `,
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`,
       fragmentShader: `
         precision highp float;
         varying vec2 vUv;
@@ -568,14 +541,15 @@
           vec3 c = texture2D(tScene, vUv).rgb;
           float l = luminance(c);
 
-          // soft threshold
           float t = uThreshold;
-          float k = uKnee;
-          float soft = clamp((l - t + k) / max(k*2.0, 1e-6), 0.0, 1.0);
+          float k = max(uKnee, 1e-6);
+
+          // soft threshold：只有接近/超过阈值才有 bloom
+          float soft = clamp((l - t + k) / (2.0*k), 0.0, 1.0);
           soft = soft*soft*(3.0-2.0*soft);
 
-          float gain = max(l - t, 0.0) + soft * k;
-          vec3 outc = c * (gain / max(l, 1e-6));
+          float w = max(l - t, 0.0) + soft * k;
+          vec3 outc = (l > 1e-6) ? c * (w / l) : vec3(0.0);
 
           gl_FragColor = vec4(outc, 1.0);
         }
@@ -585,13 +559,10 @@
     const blurMat = new THREE.ShaderMaterial({
       uniforms: {
         tInput: { value: null },
-        uTexel: { value: new THREE.Vector2(1/window.innerWidth, 1/window.innerHeight) },
+        uTexel: { value: new THREE.Vector2(1/bs.w, 1/bs.h) },
         uDir: { value: new THREE.Vector2(1,0) }
       },
-      vertexShader: `
-        varying vec2 vUv;
-        void main(){ vUv=uv; gl_Position = vec4(position.xy,0.0,1.0); }
-      `,
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`,
       fragmentShader: `
         precision highp float;
         varying vec2 vUv;
@@ -600,10 +571,8 @@
         uniform vec2 uDir;
 
         void main(){
-          // 9-tap gaussian-ish blur
           vec2 d = uTexel * uDir;
           vec3 c = vec3(0.0);
-
           c += texture2D(tInput, vUv - 4.0*d).rgb * 0.051;
           c += texture2D(tInput, vUv - 3.0*d).rgb * 0.0918;
           c += texture2D(tInput, vUv - 2.0*d).rgb * 0.12245;
@@ -613,7 +582,6 @@
           c += texture2D(tInput, vUv + 2.0*d).rgb * 0.12245;
           c += texture2D(tInput, vUv + 3.0*d).rgb * 0.0918;
           c += texture2D(tInput, vUv + 4.0*d).rgb * 0.051;
-
           gl_FragColor = vec4(c, 1.0);
         }
       `
@@ -623,17 +591,14 @@
       uniforms: {
         tScene: { value: null },
         tBloom: { value: null },
-        uBloomStrength: { value: 0.95 },
-        uVignette: { value: 0.55 },
-        uChromAb: { value: 0.0022 }, // 轻微色差
+        uBloomStrength: { value: 0.38 }, // 关键：默认更克制
+        uVignette: { value: 0.42 },
+        uChromAb: { value: 0.0016 },
         uContrast: { value: 1.06 },
-        uLift: { value: 0.015 },
-        uGamma: { value: 1.00 }
+        uLift: { value: 0.010 },
+        uGamma: { value: 2.2 } // 输出到 sRGB 前用 1/2.2
       },
-      vertexShader: `
-        varying vec2 vUv;
-        void main(){ vUv=uv; gl_Position = vec4(position.xy,0.0,1.0); }
-      `,
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`,
       fragmentShader: `
         precision highp float;
         varying vec2 vUv;
@@ -647,14 +612,12 @@
         uniform float uGamma;
 
         vec3 filmCurve(vec3 x){
-          // 轻微曲线：提升精致感（非常克制）
           x = max(x, vec3(0.0));
           x = (x*(2.51*x + 0.03)) / (x*(2.43*x + 0.59) + 0.14);
           return x;
         }
 
         void main(){
-          // 轻微色差（只做 R/B 偏移）
           vec2 c = vUv - 0.5;
           vec2 off = c * uChromAb;
 
@@ -666,18 +629,16 @@
           vec3 bloom = texture2D(tBloom, vUv).rgb;
           vec3 col = sceneCol + bloom * uBloomStrength;
 
-          // vignette
-          float v = 1.0 - smoothstep(0.1, 0.85, dot(c,c));
+          float v = 1.0 - smoothstep(0.08, 0.85, dot(c,c));
           col *= mix(1.0, v, uVignette);
 
-          // contrast + lift
           col = (col - 0.5) * uContrast + 0.5;
           col += uLift;
 
-          // film curve
+          // 只在最终做一次“胶片曲线”= tone mapping
           col = filmCurve(col);
 
-          // gamma
+          // gamma to sRGB-ish
           col = pow(max(col, vec3(0.0)), vec3(1.0 / max(uGamma, 0.001)));
 
           gl_FragColor = vec4(col, 1.0);
@@ -715,15 +676,16 @@
       oceanUniforms.uAmp.value = h;
       oceanUniforms.uLight.value = li;
 
-      // 光照同时驱动：方向光、环境光、天空太阳强度、Bloom 强度
       sun.intensity = 0.95 * li;
-      ambient.intensity = 0.24 + 0.18 * li;
+      ambient.intensity = 0.22 + 0.18 * li;
       skyUniforms.uSunStrength.value = li;
 
-      compositeMat.uniforms.uBloomStrength.value = 0.80 + 0.55*(li-1.0);
-      compositeMat.uniforms.uBloomStrength.value = Math.max(0.55, compositeMat.uniforms.uBloomStrength.value);
+      // 光照越高 bloom 稍微增强，但不让它泛滥
+      compositeMat.uniforms.uBloomStrength.value = 0.34 + 0.18*(li-1.0);
+      compositeMat.uniforms.uBloomStrength.value = Math.max(0.22, compositeMat.uniforms.uBloomStrength.value);
 
-      renderer.toneMappingExposure = 0.98 + 0.14 * li;
+      brightMat.uniforms.uThreshold.value = 1.10 + 0.08*(1.0 - li); // 亮时略降阈值，暗时略升
+      brightMat.uniforms.uKnee.value = 0.10;
     }
 
     $wind.addEventListener("input", applyParams);
@@ -732,34 +694,34 @@
 
     $reset.addEventListener("click", ()=>{
       $wind.value = "8";
-      $height.value = "1.3";
+      $height.value = "1.4";
       $light.value = "1.0";
 
-      // 恢复更“自然”的后期
-      brightMat.uniforms.uThreshold.value = 0.78;
-      compositeMat.uniforms.uVignette.value = 0.55;
-      compositeMat.uniforms.uChromAb.value = 0.0022;
+      skyUniforms.uSunCol.value.set("#ffe8c7");
+      oceanUniforms.uSunCol.value.copy(skyUniforms.uSunCol.value);
+
+      compositeMat.uniforms.uVignette.value = 0.42;
+      compositeMat.uniforms.uChromAb.value = 0.0016;
       compositeMat.uniforms.uContrast.value = 1.06;
-      compositeMat.uniforms.uLift.value = 0.015;
-      compositeMat.uniforms.uGamma.value = 1.00;
+      compositeMat.uniforms.uLift.value = 0.010;
 
       applyParams();
     });
 
     $cinema.addEventListener("click", ()=>{
-      // 一键更“电影感”：更暖的太阳、更明显辉光、更深暗角（仍然克制）
       skyUniforms.uSunCol.value.set("#ffe1b8");
       oceanUniforms.uSunCol.value.copy(skyUniforms.uSunCol.value);
 
-      brightMat.uniforms.uThreshold.value = 0.70;
-      compositeMat.uniforms.uVignette.value = 0.68;
-      compositeMat.uniforms.uChromAb.value = 0.0030;
+      compositeMat.uniforms.uVignette.value = 0.58;
+      compositeMat.uniforms.uChromAb.value = 0.0024;
       compositeMat.uniforms.uContrast.value = 1.10;
-      compositeMat.uniforms.uLift.value = 0.012;
-      compositeMat.uniforms.uGamma.value = 0.98;
+      compositeMat.uniforms.uLift.value = 0.008;
 
-      // 稍提光照，保证氛围
-      $light.value = String(Math.min(2.2, parseFloat($light.value) + 0.15));
+      // 电影感：稍降阈值但不泛滥
+      brightMat.uniforms.uThreshold.value = 1.02;
+      compositeMat.uniforms.uBloomStrength.value = Math.max(0.30, compositeMat.uniforms.uBloomStrength.value + 0.10);
+
+      $light.value = String(Math.min(2.2, parseFloat($light.value) + 0.12));
       applyParams();
     });
 
@@ -772,47 +734,36 @@
       const t = clock.getElapsedTime();
       oceanUniforms.uTime.value = t;
 
-      // 太阳方向轻微漂移，增强自然感
       const drift = 0.06 * Math.sin(t * 0.05);
       const sunDir = new THREE.Vector3(0.35 + drift, 0.72, 0.55).normalize();
       skyUniforms.uSunDir.value.copy(sunDir);
       oceanUniforms.uSunDir.value.copy(sunDir);
 
-      // 先渲染主场景到 rtScene
+      // Scene -> rtScene
       renderer.setRenderTarget(rtScene);
       renderer.clear(true,true,true);
       renderer.render(scene, camera);
       renderer.setRenderTarget(null);
 
-      // Bright pass
+      // Bright (downsample)
       brightMat.uniforms.tScene.value = rtScene.texture;
       pass(brightMat, rtBright);
 
-      // Blur (multi-iter for richer bloom)
-      blurMat.uniforms.uTexel.value.set(1/window.innerWidth, 1/window.innerHeight);
+      // Blur H/V（只一轮，避免“整屏雾化”）
+      blurMat.uniforms.uTexel.value.set(1/rtBright.width, 1/rtBright.height);
 
-      // H
       blurMat.uniforms.tInput.value = rtBright.texture;
       blurMat.uniforms.uDir.value.set(1,0);
       pass(blurMat, rtBlur1);
 
-      // V
       blurMat.uniforms.tInput.value = rtBlur1.texture;
       blurMat.uniforms.uDir.value.set(0,1);
       pass(blurMat, rtBlur2);
 
-      // 进一步再来一轮（更柔的辉光）
-      blurMat.uniforms.tInput.value = rtBlur2.texture;
-      blurMat.uniforms.uDir.value.set(1,0);
-      pass(blurMat, rtBlur1);
-
-      blurMat.uniforms.tInput.value = rtBlur1.texture;
-      blurMat.uniforms.uDir.value.set(0,1);
-      pass(blurMat, rtBlur2);
-
-      // Composite to screen
+      // Composite -> screen
       compositeMat.uniforms.tScene.value = rtScene.texture;
       compositeMat.uniforms.tBloom.value = rtBlur2.texture;
+
       quad.material = compositeMat;
       renderer.setRenderTarget(null);
       renderer.render(postScene, postCam);
@@ -829,12 +780,11 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
 
       rtScene.setSize(window.innerWidth, window.innerHeight);
-      rtBright.setSize(window.innerWidth, window.innerHeight);
-      rtBlur1.setSize(window.innerWidth, window.innerHeight);
-      rtBlur2.setSize(window.innerWidth, window.innerHeight);
 
-      oceanUniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
-      blurMat.uniforms.uTexel.value.set(1/window.innerWidth, 1/window.innerHeight);
+      bs = bloomSize();
+      rtBright.setSize(bs.w, bs.h);
+      rtBlur1.setSize(bs.w, bs.h);
+      rtBlur2.setSize(bs.w, bs.h);
     }
     window.addEventListener("resize", resize);
   })();
