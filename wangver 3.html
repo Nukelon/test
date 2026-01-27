@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="WangVer 的个人主页，记录网络技术与生活点滴的导航。">
+    <meta name="keywords" content="WangVer, Network, Developer, Linux, Cloudflare, 运维, 前端">
+    <meta name="author" content="WangVer">
+    <title>WangVer | Network Developer</title>
+    <link rel="icon" href="https://cfbed.wangver.com/20251229_122341_kslf7g.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css">
+    <script src="//unpkg.com/alpinejs" defer></script>
+
+    <script>window.SITE_DATA = {"meta":{"title":"WangVer | Network Developer","description":"WangVer 的个人主页，记录网络技术与生活点滴的导航。","keywords":"WangVer, Network, Developer, Linux, Cloudflare, 运维, 前端","favicon":"https://cfbed.wangver.com/20251229_122341_kslf7g.png","author":"WangVer","ogImage":"https://random-img.wangver.com/WangverNSFW","language":"zh-CN"},"theme":{"preset":"cyber-blue","fontFamily":"'Inter', 'Noto Sans SC', system-ui, sans-serif","colors":{"primary":"#38bdf8","accent":"#39d353","background":"#0f172a","text":"#ffffff","textSecondary":"rgba(255,255,255,0.8)"},"ui":{"glassOpacity":0.65,"blur":9,"radius":14,"bgImage":"https://random-img.wangver.com/WangverNSFW","bgOverlay":"rgba(10, 15, 30, 0.6)"}},"profile":{"name":"WangVer","role":"Network Developer","bio":"唯有热爱，方能抵御岁月漫长!","location":"中国 · 深圳","education":"学生 / 高一","job":"前端 / 网络工程师","avatar":"https://cfbed.wangver.com/20251229_122341_kslf7g.png","status":"online","email":"contact@wangver.com","statusText":"Coding..."},"features":{"showMonitor":true,"showTags":true,"showTimeline":true,"showSites":true,"showProjects":true,"showSkills":true,"showSocials":true,"showFooter":true,"particles":true,"tiltEffect":true,"smoothScroll":true},"tags":[{"id":1,"text":"网络开发","highlight":true},{"id":2,"text":"Linux","highlight":false},{"id":3,"text":"VPS运维","highlight":false},{"id":4,"text":"二次元","highlight":true},{"id":5,"text":"Docker","highlight":false}],"milestones":[{"id":1767012983811,"title":"敬请期待","date":"现在"},{"id":1767012930985,"title":"Wangver.com","date":"2025.01","desc":"我的个人品牌成立辣！"},{"id":1767012894054,"title":"财富的膨胀","date":"2024.02","desc":"项目大火，人生第一桶金"},{"id":1767012851957,"title":"发布第一个商业项目","date":"2023.11","desc":"卖着玩"},{"id":1767012815267,"title":"搭建第一个网站","date":"2022.02","desc":"也没那么难嘛"},{"id":1,"title":"...","desc":"","date":"...","active":false},{"id":2,"title":"接触Network","desc":"井底之蛙看世界","date":"2021.02","active":false},{"id":3,"title":"接触币圈","desc":"区块链概念首次进入视野","date":"2020.01","active":false}],"socials":[{"id":1,"name":"GitHub","icon":"fab fa-github","url":"https://github.com/W-Ver","color":""},{"id":2,"name":"Email","icon":"fas fa-envelope","url":"mailto:wangver721@gmail.com","color":""},{"id":3,"name":"Telegram","icon":"fab fa-telegram","url":"https://t.me/L_death","color":"#229ED9"}],"sites":[{"id":1,"name":"博客","desc":"笔记与生活","icon":"📝","color":"#4facfe","url":"https://blog.wangver.com/"},{"id":2,"name":"网盘","desc":"私人存储","icon":"☁️","color":"#f472b6","url":"https://drive.wangver.com/"},{"id":3,"name":"实验室","desc":"Beta项目","icon":"🧪","color":"#c084fc","url":"#"}],"projects":[{"id":1,"name":"Hanime1 下载器","desc":"基于 Python PyQt 的高效下载工具","icon":"📦","url":"https://github.com/W-Ver/Hanime1_downloader"},{"id":2,"name":"WangVer 主页","desc":"Vue3 + Vite 现代化极简主页","icon":"🎨","url":"#"}],"skills":["devicon-python-plain","devicon-go-original-wordmark","devicon-vuejs-plain","devicon-react-original","devicon-linux-plain","devicon-docker-plain","devicon-nginx-original","devicon-git-plain"],"stats":{"totalVisits":477,"daily":{"2025-12-29":26,"2025-12-30":39,"2025-12-31":21,"2026-01-01":21,"2026-01-02":15,"2026-01-03":16,"2026-01-04":19,"2026-01-05":18,"2026-01-06":10,"2026-01-07":12,"2026-01-08":18,"2026-01-09":21,"2026-01-10":5,"2026-01-11":17,"2026-01-12":13,"2026-01-13":17,"2026-01-14":14,"2026-01-15":8,"2026-01-16":13,"2026-01-17":15,"2026-01-18":18,"2026-01-19":16,"2026-01-20":17,"2026-01-21":9,"2026-01-22":8,"2026-01-23":13,"2026-01-24":17,"2026-01-25":14,"2026-01-26":17,"2026-01-27":10}},"visitorLogs":[],"advanced":{"customCss":"/* 在此添加自定义 CSS */","customJs":"// 在此添加自定义 JS","headTags":""},"auditLog":[{"id":"8655fa47-73fd-4f8f-a5ad-633d376cf5bb","timestamp":"2025-12-31T13:30:58.188Z","user":"Admin","action":"UPDATE","details":"Updated by Admin"},{"id":"63bb9412-81ab-430f-a00d-c30136eeb13b","timestamp":"2025-12-30T08:09:46.842Z","user":"Admin","action":"UPDATE","details":"Updated by Admin"},{"id":"dc8ff348-c89e-457c-8369-9866d826743c","timestamp":"2025-12-30T06:31:55.296Z","user":"Admin","action":"UPDATE","details":"Updated by Admin"},{"id":"71c0f13f-3873-4eeb-82ee-dca22525f5ec","timestamp":"2025-12-30T02:36:57.873Z","user":"Admin","action":"DELETE_LOGS","details":"Updated by Admin"},{"id":"de9d990c-f64d-4490-a76e-8337c7e010b1","timestamp":"2025-12-29T13:16:30.307Z","user":"Admin","action":"UPDATE","details":"Updated by Admin"},{"id":"1a9203a7-4f60-4db6-9e72-b30fe6fc5011","timestamp":"2025-12-29T12:56:39.790Z","user":"Admin","action":"UPDATE","details":"Updated by Admin"},{"id":"3c931e20-f269-4c6f-be40-6c49e7c87e7e","timestamp":"2025-12-29T12:48:21.634Z","user":"Admin","action":"UPDATE","details":"Updated by Admin"},{"id":"333fc55d-3072-41c5-9f97-7e8b924eba70","timestamp":"2025-12-29T12:29:50.415Z","user":"Admin","action":"UPDATE","details":"Updated by Admin"},{"id":"5de6547f-6d3d-4305-8419-117b382c8981","timestamp":"2025-12-29T11:46:08.673Z","user":"Admin","action":"UPDATE","ip":"unknown"}]};</script>
+
+  
+  
+  
+  
+  
+  
+  
+    <style>
+        :root {
+            --bg-img: url('https://random-img.wangver.com/WangverNSFW');
+            --bg-overlay: rgba(10, 15, 30, 0.6);
+            --c-primary: #38bdf8;
+            --c-accent: #39d353;
+            --c-text: #ffffff;
+            --c-text-sec: rgba(255,255,255,0.8);
+            --g-opacity: 0.65;
+            --g-blur: 9px;
+            --g-radius: 14px;
+            --font-main: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+            --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: var(--font-main); 
+            background: var(--bg-img) no-repeat center center fixed; 
+            background-size: cover;
+            color: var(--c-text); 
+            min-height: 100vh; 
+            padding: 40px 20px; 
+            overflow-x: hidden;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+        }
+
+        .overlay { 
+            position: fixed; 
+            inset: 0; 
+            background: var(--bg-overlay); 
+            z-index: -1; 
+            pointer-events: none; 
+        }
+        
+        #particle-canvas { 
+            position: fixed; 
+            inset: 0; 
+            z-index: -1; 
+            pointer-events: none; 
+            opacity: 0.6; 
+        }
+        
+        /* ============================================
+         * 桌面端：Grid 双栏布局 (Sidebar + Main)
+         * ============================================ */
+        .container {
+            width: 100%; 
+            max-width: 1200px;
+            display: grid; 
+            grid-template-columns: 280px 1fr;
+            gap: 20px; 
+            z-index: 10;
+            opacity: 0; 
+            animation: entry 0.8s var(--ease-out) forwards;
+        }
+        
+        @keyframes entry { 
+            from { opacity: 0; transform: translateY(30px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        /* 侧边栏和主内容区域 - 桌面端正常显示 */
+        .sidebar { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+        }
+        
+        .main { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+        }
+
+        /* ============================================
+         * 移动端：强制单列 Flexbox 布局 + Order 排序
+         * ============================================ */
+        @media (max-width: 900px) {
+            body { 
+                padding: 15px; 
+                align-items: flex-start; 
+            }
+            
+            .container {
+                /* 改为 Flexbox 单列布局 */
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            /* Sidebar 和 Main 使用 display: contents 
+             * 让其内部的子元素成为 .container 的直接子元素
+             * 这样才能通过 order 属性控制排序 */
+            .sidebar, 
+            .main { 
+                display: contents; 
+            }
+            
+            /* ============================================
+             * 移动端元素排序 - 使用 order 属性
+             * ============================================ */
+            
+            /* 1. Hero - 绝对置顶 */
+            .block-hero { order: 1; }
+            
+            /* 2. Info - 个人信息卡 */
+            .block-info { order: 2; }
+            
+            /* 3. Sites - 站点导航 */
+            .block-sites { order: 3; }
+            
+            /* 4. Projects - 项目展示 */
+            .block-projects { order: 4; }
+            
+            /* 5. Tags - 关注领域 */
+            .block-tags { order: 5; }
+            
+            /* 6. Timeline - 里程碑 */
+            .block-timeline { order: 6; }
+            
+            /* 7. Skills - 技术栈 */
+            .block-skills { order: 7; }
+            
+            /* 8. Footer - 页脚 */
+            .block-footer { order: 8; }
+        }
+
+        /* Glass Component */
+        .glass {
+            background: rgba(15, 23, 42, var(--g-opacity)); 
+            backdrop-filter: blur(var(--g-blur)); 
+            -webkit-backdrop-filter: blur(var(--g-blur));
+            border: 1px solid rgba(255,255,255,0.08); 
+            border-top-color: rgba(255,255,255,0.15); 
+            border-radius: var(--g-radius); 
+            padding: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.3); 
+            transition: all 0.3s var(--ease-out); 
+            position: relative; 
+            overflow: hidden;
+            display: flex; 
+            flex-direction: column;
+        }
+        
+        .hover-up:hover { 
+            transform: translateY(-4px); 
+            background: rgba(30, 41, 65, 0.9); 
+            border-color: rgba(255,255,255,0.25); 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4); 
+        }
+        
+        .glass::after {
+            content: ''; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.05) 50%, transparent 70%);
+            transform: skewX(-20deg) translateX(-150%); 
+            transition: transform 0.6s; 
+            pointer-events: none;
+        }
+        
+        .hover-up:hover::after { 
+            transform: skewX(-20deg) translateX(150%); 
+        }
+
+        /* Sidebar Styles */
+        .info-row { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            margin-bottom: 12px; 
+            color: var(--c-text-sec); 
+            font-size: 0.95rem; 
+        }
+        
+        .info-row i { 
+            width: 24px; 
+            text-align: center; 
+            color: var(--c-primary); 
+        }
+        
+        .sec-title { 
+            font-size: 0.85rem; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            margin-bottom: 15px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            color: rgba(255,255,255,0.5); 
+        }
+        
+        .sec-title i { color: var(--c-accent); }
+
+        .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tag { 
+            font-size: 0.75rem; 
+            padding: 4px 12px; 
+            background: rgba(255,255,255,0.08); 
+            border-radius: 20px; 
+            transition: 0.2s; 
+            cursor: default; 
+            border: 1px solid transparent; 
+        }
+        .tag.hl { 
+            background: rgba(56, 189, 248, 0.15); 
+            color: #fff; 
+            border-color: var(--c-primary); 
+        }
+
+        .timeline-wheel {
+            position: relative; 
+            max-height: 250px; 
+            overflow-y: auto; 
+            padding-right: 5px;
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+            padding-top: 20px; 
+            padding-bottom: 20px; 
+            scrollbar-width: none;
+        }
+        .timeline-wheel::-webkit-scrollbar { display: none; }
+        
+        .tl-item { 
+            position: relative; 
+            margin-bottom: 20px; 
+            padding-left: 20px; 
+            border-left: 2px solid rgba(255,255,255,0.1); 
+            margin-left: 10px; 
+        }
+        .tl-item::before { 
+            content: ''; 
+            position: absolute; 
+            left: -27px; 
+            top: 4px; 
+            width: 10px; 
+            height: 10px; 
+            background: var(--bg-img); 
+            border: 2px solid var(--c-accent); 
+            border-radius: 50%; 
+            background-attachment: fixed; 
+        }
+        .tl-title { font-weight: 700; font-size: 0.9rem; color: #fff; }
+        .tl-desc { font-size: 0.8rem; color: var(--c-text-sec); margin-top: 2px; }
+        .tl-date { font-size: 0.7rem; opacity: 0.5; font-family: monospace; margin-top: 2px; }
+
+        /* Hero Section */
+        .hero { 
+            display: grid; 
+            grid-template-columns: 1fr 340px; 
+            gap: 30px; 
+            align-items: center; 
+        }
+        .profile-container { display: flex; gap: 24px; align-items: center; }
+        .avatar { 
+            width: 110px; 
+            height: 110px; 
+            border-radius: 50%; 
+            border: 4px solid rgba(255,255,255,0.2); 
+            background-size: cover; 
+            position: relative; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            transition: transform 0.5s var(--ease-out); 
+            flex-shrink: 0; 
+        }
+        .avatar:hover { 
+            transform: rotate(10deg) scale(1.05); 
+            border-color: var(--c-primary); 
+        }
+        .status-dot { 
+            position: absolute; 
+            bottom: 5px; 
+            right: 5px; 
+            width: 20px; 
+            height: 20px; 
+            background: #22c55e; 
+            border: 3px solid #1e293b; 
+            border-radius: 50%; 
+            box-shadow: 0 0 10px #22c55e; 
+            animation: pulse 2s infinite; 
+        }
+        @keyframes pulse { 
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); } 
+            70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } 
+        }
+
+        .name { 
+            font-size: 2.5rem; 
+            font-weight: 800; 
+            line-height: 1.1; 
+            margin-bottom: 8px; 
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5); 
+        }
+        .role { 
+            display: inline-block; 
+            padding: 4px 10px; 
+            background: rgba(56,189,248,0.15); 
+            color: var(--c-primary); 
+            border-radius: 6px; 
+            font-size: 0.85rem; 
+            font-weight: 600; 
+        }
+        .bio { 
+            margin-top:12px; 
+            font-style:italic; 
+            opacity:0.8; 
+            font-size: 0.95rem; 
+        }
+        .socials { 
+            display: flex; 
+            gap: 10px; 
+            margin-top: 20px; 
+            flex-wrap: wrap; 
+        }
+        .s-btn { 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 10px; 
+            background: rgba(255,255,255,0.08); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: #fff; 
+            text-decoration: none; 
+            transition: 0.2s; 
+            font-size: 1.1rem; 
+        }
+        .s-btn:hover { 
+            background: var(--c-primary); 
+            transform: translateY(-4px); 
+        }
+
+        /* Monitor */
+        .monitor { 
+            height: 120px; 
+            background: rgba(10,15,25,0.7); 
+            border-radius: 12px; 
+            border: 1px solid rgba(56,189,248,0.2); 
+            position: relative; 
+            overflow: hidden; 
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.6); 
+            margin-top: 20px; 
+        }
+        .hud { 
+            position: absolute; 
+            top: 10px; 
+            left: 15px; 
+            right: 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            font-family: 'Courier New', monospace; 
+            font-size: 10px; 
+            color: var(--c-primary); 
+            pointer-events: none; 
+            opacity: 0.8; 
+        }
+        .leds { display: flex; gap: 4px; } 
+        .led { width: 4px; height: 4px; border-radius: 50%; background: #333; } 
+        .led.on { background: var(--c-accent); box-shadow: 0 0 5px var(--c-accent); }
+        canvas#monitor-cvs { width: 100%; height: 100%; display: block; }
+
+        /* Grids */
+        .grid-4 { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 16px; 
+        }
+        .grid-2 { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 16px; 
+        }
+        
+        /* Card Links */
+        .card-link { 
+            text-decoration: none; 
+            display: flex; 
+            flex-direction: row; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 22px; 
+            height: 100%; 
+            text-align: left; 
+        }
+        .card-txt { flex: 1; } 
+        .card-txt h3 { 
+            font-size: 1rem; 
+            color: #fff; 
+            margin-bottom: 4px; 
+            font-weight: 600; 
+        } 
+        .card-txt p { 
+            font-size: 0.75rem; 
+            color: rgba(255,255,255,0.6); 
+        }
+        .card-icon { 
+            font-size: 1.8rem; 
+            transition: 0.3s var(--ease-out); 
+            opacity: 0.9; 
+            margin-left: 10px; 
+        }
+        .card-link:hover .card-icon { 
+            transform: scale(1.2) rotate(10deg); 
+            opacity: 1; 
+        }
+
+        .skills { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 16px; 
+            padding: 5px 0; 
+        }
+        .skill-i { 
+            font-size: 2.4rem; 
+            filter: grayscale(0.6) opacity(0.8); 
+            transition: 0.3s; 
+        }
+        .skill-i:hover { 
+            filter: grayscale(0) opacity(1); 
+            transform: translateY(-5px); 
+        }
+        
+        .footer { 
+            text-align: center; 
+            margin-top: 20px; 
+            padding-top: 20px; 
+            border-top: 1px solid rgba(255,255,255,0.08); 
+            font-size: 0.8rem; 
+            color: rgba(255,255,255,0.4); 
+        }
+
+        /* Mobile Adjustments */
+        @media(max-width: 900px) {
+            .hero { 
+                grid-template-columns: 1fr; 
+                text-align: center; 
+            }
+            .profile-container { 
+                flex-direction: column; 
+                width: 100%; 
+                text-align: center; 
+            }
+            .socials { justify-content: center; }
+            .monitor { display: none; } 
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media(max-width: 480px) {
+            body { padding: 10px; }
+            .grid-2, .grid-4 { grid-template-columns: 1fr; }
+            .name { font-size: 2rem; }
+        }
+ 
+ 
+    </style>
+<style id="custom-css">/* 在此添加自定义 CSS */</style></head>
+<body x-data="{ data: window.SITE_DATA }">
+    <div class="overlay"></div>
+    <canvas id="particle-canvas" x-show="data.features.particles"></canvas>
+
+    <div class="container">
+        
+        <!-- SIDEBAR 区域 -->
+        <aside class="sidebar">
+            <!-- Info Card -->
+            <div class="glass hover-up tilt-el block-info">
+                <div class="info-row"><i class="fas fa-location-dot"></i> <span x-text="data.profile.location"></span></div>
+                <div class="info-row"><i class="fas fa-graduation-cap"></i> <span x-text="data.profile.education"></span></div>
+                <div class="info-row"><i class="fas fa-briefcase"></i> <span x-text="data.profile.job"></span></div>
+                <div class="info-row" title="累计访问量"><i class="fas fa-eye"></i> 总访客: <span x-text="data.stats.totalVisits"></span></div>
+            </div>
+
+            <!-- Tags -->
+            <div class="glass hover-up tilt-el block-tags" x-show="data.features.showTags">
+                <div class="sec-title">关注领域 <i class="fas fa-tags"></i></div>
+                <div class="tags">
+                    <template x-for="t in data.tags" :key="t.id">
+                        <span class="tag" :class="t.highlight ? 'hl' : ''" x-text="t.text"></span>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="glass hover-up tilt-el block-timeline" x-show="data.features.showTimeline">
+                <div class="sec-title">里程碑 <i class="fas fa-flag"></i></div>
+                <div class="timeline-wheel">
+                    <div class="timeline">
+                        <template x-for="m in data.milestones" :key="m.id">
+                            <div class="tl-item">
+                                <div class="tl-title" x-text="m.title"></div>
+                                <div class="tl-desc" x-text="m.desc"></div>
+                                <div class="tl-date" x-text="m.date"></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN 区域 -->
+        <main class="main">
+            <!-- Hero: Profile + Monitor -->
+            <div class="glass hero hover-up tilt-el-lg block-hero">
+                <div class="profile-container">
+                    <div class="avatar" :style="`background-image: url('${data.profile.avatar}')`">
+                        <div class="status-dot"></div>
+                    </div>
+                    <div>
+                        <h1 class="name">Hi, I'm <span style="color:var(--c-primary)" x-text="data.profile.name"></span></h1>
+                        <span class="role" x-text="data.profile.role"></span>
+                        <p class="bio" x-text="data.profile.bio"></p>
+                        <div class="socials" x-show="data.features.showSocials">
+                            <template x-for="s in data.socials" :key="s.id">
+                                <a :href="s.url" class="s-btn" target="_blank" :style="s.color ? `color:${s.color}` : ''">
+                                    <i :class="s.icon"></i>
+                                </a>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                <div class="monitor" x-show="data.features.showMonitor">
+                    <div class="hud"><span>NET_IO :: <span x-text="data.profile.status.toUpperCase()"></span></span><div class="leds"><div class="led on"></div><div class="led"></div></div></div>
+                    <canvas id="monitor-cvs"></canvas>
+                </div>
+            </div>
+
+            <!-- Sites -->
+            <div x-show="data.features.showSites" class="block-sites">
+                <div class="sec-title">站点导航 <i class="far fa-compass"></i></div>
+                <div class="grid-4">
+                    <template x-for="site in data.sites" :key="site.id">
+                        <a :href="site.url" target="_blank" class="glass card-link hover-up">
+                            <div class="card-txt"><h3 x-text="site.name"></h3><p x-text="site.desc"></p></div>
+                            <div class="card-icon" :style="`color:${site.color}`" x-text="site.icon"></div>
+                        </a>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Projects -->
+            <div x-show="data.features.showProjects" class="block-projects">
+                <div class="sec-title">精选项目 <i class="fas fa-code-branch"></i></div>
+                <div class="grid-2">
+                    <template x-for="p in data.projects" :key="p.id">
+                        <a :href="p.url" target="_blank" class="glass card-link hover-up">
+                            <div class="card-txt"><h3 x-text="p.name"></h3><p x-text="p.desc"></p></div>
+                            <div class="card-icon" x-text="p.icon"></div>
+                        </a>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Skills -->
+            <div x-show="data.features.showSkills" class="block-skills">
+                <div class="sec-title">技术栈 <i class="fas fa-layer-group"></i></div>
+                <div class="glass hover-up">
+                    <div class="skills">
+                        <template x-for="s in data.skills"><i :class="s + ' colored skill-i'"></i></template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="block-footer footer" x-show="data.features.showFooter">
+                <span x-text="data.profile.name"></span> © 2025 | Powered by WangVer CMS
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const data = window.SITE_DATA;
+            
+            // Monitor Animation
+            if(data.features.showMonitor && window.innerWidth > 600) {
+                const cvs = document.getElementById('monitor-cvs');
+                if(cvs) {
+                    const ctx = cvs.getContext('2d'); 
+                    let phase = 0;
+                    const resize = () => { 
+                        cvs.width = cvs.parentElement.offsetWidth; 
+                        cvs.height = cvs.parentElement.offsetHeight; 
+                    };
+                    window.addEventListener('resize', resize); 
+                    resize();
+                    const conf = { 
+                        color: getComputedStyle(document.body).getPropertyValue('--c-primary').trim() || '#38bdf8', 
+                        accent: '#39d353' 
+                    };
+                    const loop = () => {
+                        const w = cvs.width, h = cvs.height; 
+                        ctx.clearRect(0,0,w,h);
+                        ctx.strokeStyle = 'rgba(255,255,255,0.05)'; 
+                        ctx.lineWidth = 1; 
+                        ctx.beginPath();
+                        for(let x=0;x<w;x+=20){ctx.moveTo(x,0);ctx.lineTo(x,h);} 
+                        for(let y=0;y<h;y+=20){ctx.moveTo(0,y);ctx.lineTo(w,y);} 
+                        ctx.stroke();
+                        phase += 0.05;
+                        const drawWave = (amp, freq, off, color) => {
+                            ctx.beginPath(); 
+                            ctx.strokeStyle = color; 
+                            ctx.lineWidth = 2;
+                            for(let x=0; x<w; x+=2) { 
+                                const y = Math.sin(x*freq + phase) * amp * Math.sin(phase*0.5); 
+                                ctx.lineTo(x, h/2 + y + off); 
+                            } 
+                            ctx.stroke();
+                        }
+                        ctx.globalAlpha = 0.8; 
+                        drawWave(20, 0.02, 0, conf.color); 
+                        ctx.globalAlpha = 0.4; 
+                        drawWave(25, 0.015, 5, conf.accent);
+                        ctx.fillStyle = 'rgba(255,255,255,0.1)'; 
+                        ctx.fillRect(0, (Math.sin(phase*0.2)+1)/2*h, w, 2);
+                        requestAnimationFrame(loop);
+                    }; 
+                    loop();
+                }
+            }
+            
+            // Particle System
+            if(data.features.particles) {
+                const pCanvas = document.getElementById('particle-canvas');
+                if(pCanvas) {
+                    const ctx = pCanvas.getContext('2d'); 
+                    let particles = [];
+                    const initP = () => { 
+                        pCanvas.width = window.innerWidth; 
+                        pCanvas.height = window.innerHeight; 
+                        particles = Array.from({length:60}, () => ({
+                            x:Math.random()*pCanvas.width, 
+                            y:Math.random()*pCanvas.height, 
+                            vx:(Math.random()-0.5)*0.5, 
+                            vy:(Math.random()-0.5)*0.5, 
+                            size:Math.random()*2
+                        })); 
+                    };
+                    const drawP = () => { 
+                        ctx.clearRect(0,0,pCanvas.width,pCanvas.height); 
+                        ctx.fillStyle = '#fff'; 
+                        particles.forEach(p => { 
+                            p.x+=p.vx; 
+                            p.y+=p.vy; 
+                            if(p.x<0)p.x=pCanvas.width; 
+                            if(p.x>p
