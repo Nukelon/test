@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D 物理沙漏模拟器</title>
+  <style>
+    :root {
+      --bg1: #09142a;
+      --bg2: #170b2e;
+      --panel: rgba(8, 14, 34, 0.72);
+      --line: rgba(255, 255, 255, 0.16);
+      --text: #e6f0ff;
+      --accent: #5fd6ff;
+      --accent2: #9f7bff;
+      --ok: #8affbf;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%; margin: 0;
+      background: radial-gradient(circle at 20% 15%, #203870, transparent 34%),
+                  radial-gradient(circle at 80% 18%, #462174, transparent 30%),
+                  linear-gradient(120deg, var(--bg1), var(--bg2));
+      color: var(--text);
+      font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      overflow: hidden;
+    }
+    #app { position: fixed; inset: 0; }
+    #ui {
+      position: fixed;
+      left: 24px;
+      top: 24px;
+      width: min(360px, calc(100vw - 32px));
+      padding: 18px 18px 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 18px 40px rgba(5, 8, 18, 0.48), inset 0 0 22px rgba(95, 214, 255, 0.08);
+      z-index: 2;
+    }
+    h1 {
+      margin: 2px 0 12px;
+      font-size: 1.04rem;
+      letter-spacing: 0.02em;
+      font-weight: 700;
+    }
+    .row { margin: 12px 0; }
+    .label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.88rem;
+      opacity: 0.95;
+      margin-bottom: 6px;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    .buttons { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    button {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--text);
+      background: linear-gradient(135deg, rgba(95, 214, 255, 0.28), rgba(159, 123, 255, 0.3));
+      border-radius: 12px;
+      padding: 9px 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, opacity .2s;
+    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,0,0,.25); }
+    button:active { transform: translateY(1px) scale(.995); }
+    .hint {
+      margin-top: 10px;
+      font-size: .78rem;
+      opacity: .8;
+      line-height: 1.45;
+    }
+    #stats {
+      position: fixed;
+      right: 20px;
+      top: 16px;
+      font-size: .82rem;
+      color: #d4f7ff;
+      background: rgba(4, 8, 20, .45);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 10px;
+      padding: 8px 12px;
+      backdrop-filter: blur(8px);
+      z-index: 2;
+      min-width: 170px;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="ui">
+    <h1>3D 物理沙漏模拟器</h1>
+    <div class="row">
+      <div class="label"><span>沙粒渲染密度</span><strong id="densityValue">65%</strong></div>
+      <input id="density" type="range" min="10" max="100" value="65" />
+    </div>
+    <div class="row">
+      <div class="label"><span>沙漏流速</span><strong id="flowValue">1.0x</strong></div>
+      <input id="flow" type="range" min="0.4" max="2.5" step="0.1" value="1.0" />
+    </div>
+    <div class="buttons">
+      <button id="flipBtn">翻转沙漏</button>
+      <button id="resetBtn">重置沙粒</button>
+    </div>
+    <div class="hint">可拖拽旋转视角，滚轮缩放。沙粒采用离散物理步进、容器边界碰撞和颈口通过判定进行模拟。</div>
+  </div>
+  <div id="stats">初始化中...</div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.162.0/build/three.module.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'https://unpkg.com/three@0.162.0/examples/jsm/controls/OrbitControls.js';
+
+    const app = document.getElementById('app');
+    const densityInput = document.getElementById('density');
+    const densityValue = document.getElementById('densityValue');
+    const flowInput = document.getElementById('flow');
+    const flowValue = document.getElementById('flowValue');
+    const stats = document.getElementById('stats');
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    app.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0e1330, 0.08);
+
+    const camera = new THREE.PerspectiveCamera(44, innerWidth / innerHeight, 0.1, 100);
+    camera.position.set(0, 1.1, 6.2);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 0, 0);
+    controls.minDistance = 3.1;
+    controls.maxDistance = 10;
+
+    const hourglassGroup = new THREE.Group();
+    scene.add(hourglassGroup);
+
+    const ambient = new THREE.AmbientLight(0xaec8ff, 0.55);
+    scene.add(ambient);
+
+    const keyLight = new THREE.DirectionalLight(0xd6ffff, 1.0);
+    keyLight.position.set(4, 5, 3);
+    scene.add(keyLight);
+
+    const rimLight = new THREE.PointLight(0x8f60ff, 1.2, 20, 2);
+    rimLight.position.set(-2.4, 1.8, -2.6);
+    scene.add(rimLight);
+
+    const baseMat = new THREE.MeshPhysicalMaterial({
+      color: 0x1f2745,
+      roughness: 0.36,
+      metalness: 0.46,
+      clearcoat: 0.25,
+      emissive: 0x111733
+    });
+
+    const topBase = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.58, 0.24, 48), baseMat);
+    topBase.position.y = 2.08;
+    const bottomBase = topBase.clone();
+    bottomBase.position.y = -2.08;
+    hourglassGroup.add(topBase, bottomBase);
+
+    const neckRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.28, 0.06, 24, 60),
+      new THREE.MeshStandardMaterial({ color: 0x3a4b7f, metalness: 0.45, roughness: 0.35 })
+    );
+    neckRing.rotation.x = Math.PI / 2;
+    hourglassGroup.add(neckRing);
+
+    const outerGlass = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.04, 1.04, 3.96, 64, 1, true),
+      new THREE.MeshPhysicalMaterial({
+        color: 0x9fcbff,
+        transparent: true,
+        opacity: 0.09,
+        roughness: 0.01,
+        transmission: 0.96,
+        thickness: 0.24,
+        ior: 1.25,
+        side: THREE.DoubleSide
+      })
+    );
+    hourglassGroup.add(outerGlass);
+
+    function bulbRadius(y) {
+      const h = 1.9;
+      const ay = Math.abs(y);
+      if (ay > h) return 0;
+      const t = ay / h;
+      const neck = 0.11;
+      const mid = 0.34;
+      const maxR = 0.93;
+      return neck + (maxR - neck) * Math.pow(t, 1.42) + (mid - neck) * Math.exp(-Math.pow(t / 0.19, 2));
+    }
+
+    const glassPoints = [];
+    for (let i = 0; i <= 88; i++) {
+      const y = -1.9 + (i / 88) * 3.8;
+      glassPoints.push(new THREE.Vector2(bulbRadius(y), y));
+    }
+    const innerGlass = new THREE.Mesh(
+      new THREE.LatheGeometry(glassPoints, 96),
+      new THREE.MeshPhysicalMaterial({
+        color: 0xc4ecff,
+        transparent: true,
+        opacity: 0.2,
+        transmission: 0.78,
+        roughness: 0.08,
+        thickness: 0.16,
+        side: THREE.DoubleSide
+      })
+    );
+    hourglassGroup.add(innerGlass);
+
+    const MAX_PARTICLES = 9000;
+    let activeParticles = Math.floor(MAX_PARTICLES * 0.65);
+    const positions = new Float32Array(MAX_PARTICLES * 3);
+    const velocities = new Float32Array(MAX_PARTICLES * 3);
+    const particleGeometry = new THREE.BufferGeometry();
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    const particleMat = new THREE.PointsMaterial({
+      color: 0xf4df9d,
+      size: 0.028,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+
+    const particles = new THREE.Points(particleGeometry, particleMat);
+    hourglassGroup.add(particles);
+
+    let flowScale = 1;
+    const drag = 0.997;
+    const bounce = 0.16;
+    const sandRadius = 0.018;
+    const gravityWorld = new THREE.Vector3(0, -5.5, 0);
+    const gravityLocal = new THREE.Vector3();
+    const tempV = new THREE.Vector3();
+
+    function randomInTopBulb() {
+      let x, y, z;
+      do {
+        y = THREE.MathUtils.lerp(0.05, 1.82, Math.random());
+        const r = bulbRadius(y) * Math.sqrt(Math.random()) * 0.96;
+        const a = Math.random() * Math.PI * 2;
+        x = Math.cos(a) * r;
+        z = Math.sin(a) * r;
+      } while (x * x + z * z > bulbRadius(y) ** 2);
+      return { x, y, z };
+    }
+
+    function resetParticles() {
+      for (let i = 0; i < activeParticles; i++) {
+        const p = randomInTopBulb();
+        const idx = i * 3;
+        positions[idx] = p.x;
+        positions[idx + 1] = p.y;
+        positions[idx + 2] = p.z;
+        velocities[idx] = 0;
+        velocities[idx + 1] = 0;
+        velocities[idx + 2] = 0;
+      }
+      particleGeometry.setDrawRange(0, activeParticles);
+      particleGeometry.attributes.position.needsUpdate = true;
+    }
+
+    function updateDensity() {
+      const ratio = Number(densityInput.value) / 100;
+      densityValue.textContent = `${densityInput.value}%`;
+      activeParticles = Math.max(300, Math.floor(MAX_PARTICLES * ratio));
+      particleMat.size = THREE.MathUtils.lerp(0.022, 0.034, ratio);
+      resetParticles();
+    }
+
+    densityInput.addEventListener('input', updateDensity);
+    flowInput.addEventListener('input', () => {
+      flowScale = Number(flowInput.value);
+      flowValue.textContent = `${flowScale.toFixed(1)}x`;
+    });
+
+    updateDensity();
+
+    let flipAnim = null;
+    function flipHourglass() {
+      const from = hourglassGroup.quaternion.clone();
+      const axis = new THREE.Vector3(Math.random() * 0.5 + 0.4, 0, Math.random() * 0.5 + 0.5).normalize();
+      const delta = new THREE.Quaternion().setFromAxisAngle(axis, Math.PI);
+      const to = from.clone().multiply(delta);
+      flipAnim = { from, to, t: 0, duration: 1150 };
+    }
+
+    document.getElementById('flipBtn').addEventListener('click', flipHourglass);
+    document.getElementById('resetBtn').addEventListener('click', resetParticles);
+
+    resetParticles();
+
+    function simulate(dt) {
+      gravityLocal.copy(gravityWorld).applyQuaternion(hourglassGroup.quaternion.clone().invert());
+      const gX = gravityLocal.x * flowScale;
+      const gY = gravityLocal.y * flowScale;
+      const gZ = gravityLocal.z * flowScale;
+
+      for (let i = 0; i < activeParticles; i++) {
+        const idx = i * 3;
+
+        velocities[idx] += gX * dt;
+        velocities[idx + 1] += gY * dt;
+        velocities[idx + 2] += gZ * dt;
+
+        velocities[idx] *= drag;
+        velocities[idx + 1] *= drag;
+        velocities[idx + 2] *= drag;
+
+        positions[idx] += velocities[idx] * dt;
+        positions[idx + 1] += velocities[idx + 1] * dt;
+        positions[idx + 2] += velocities[idx + 2] * dt;
+
+        let px = positions[idx];
+        let py = positions[idx + 1];
+        let pz = positions[idx + 2];
+
+        const pr = Math.hypot(px, pz);
+        const limitR = Math.max(0.05, bulbRadius(py) - sandRadius);
+
+        if (Math.abs(py) > 1.9) {
+          py = Math.sign(py) * 1.9;
+          velocities[idx + 1] *= -bounce;
+        }
+
+        if (pr > limitR) {
+          const nx = px / (pr || 1e-5);
+          const nz = pz / (pr || 1e-5);
+          px = nx * limitR;
+          pz = nz * limitR;
+
+          tempV.set(velocities[idx], velocities[idx + 1], velocities[idx + 2]);
+          const n = new THREE.Vector3(nx, 0, nz);
+          const vn = n.multiplyScalar(tempV.dot(n));
+          tempV.sub(vn.multiplyScalar(1 + bounce));
+          velocities[idx] = tempV.x;
+          velocities[idx + 1] = tempV.y;
+          velocities[idx + 2] = tempV.z;
+        }
+
+        if (Math.abs(py) < 0.13 && pr > 0.09) {
+          const corr = 0.09 / (pr || 1e-5);
+          px *= corr;
+          pz *= corr;
+          velocities[idx] *= 0.4;
+          velocities[idx + 2] *= 0.4;
+        }
+
+        positions[idx] = px;
+        positions[idx + 1] = py;
+        positions[idx + 2] = pz;
+      }
+      particleGeometry.attributes.position.needsUpdate = true;
+    }
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(0.026, clock.getDelta());
+
+      if (flipAnim) {
+        flipAnim.t += dt * 1000;
+        const k = Math.min(1, flipAnim.t / flipAnim.duration);
+        const e = 1 - Math.pow(1 - k, 3);
+        THREE.Quaternion.slerp(flipAnim.from, flipAnim.to, hourglassGroup.quaternion, e);
+        if (k >= 1) flipAnim = null;
+      }
+
+      simulate(dt);
+      controls.update();
+
+      const topCount = countInTop();
+      stats.innerHTML = `沙粒: <b>${activeParticles.toLocaleString()}</b><br>上半部占比: <b style="color:var(--ok)">${(topCount / activeParticles * 100).toFixed(1)}%</b>`;
+      renderer.render(scene, camera);
+    }
+
+    function countInTop() {
+      let n = 0;
+      for (let i = 0; i < activeParticles; i++) {
+        if (positions[i * 3 + 1] > 0) n++;
+      }
+      return n;
+    }
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
